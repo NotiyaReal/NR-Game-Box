@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NR GAME BOX</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; -webkit-tap-highlight-color: transparent; }
+        
+        html, body {
+            height: 100%;
+            max-height: 100vh;
+            overflow: hidden;
+            background: #0d0f18;
+            color: #fff;
+            touch-action: manipulation;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+        }
+
+        /* Screens */
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            height: 100%;
+            max-width: 400px;
+        }
+
+        .screen.active { display: flex; }
+
+        /* HEADER FRAME */
+        .header-frame {
+            width: 100%;
+            text-align: center;
+            padding: 14px 10px;
+            background: linear-gradient(145deg, #181d30, #0f1220);
+            border: 2px solid #00F2FE;
+            border-radius: 18px;
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.35), inset 0 0 10px rgba(0, 242, 254, 0.15);
+            margin-bottom: 8px;
+        }
+
+        .main-title {
+            font-size: 1.8rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, #00F2FE, #4FACFE, #00C6FF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 12px rgba(0, 242, 254, 0.3);
+        }
+
+        /* MENU BUTTONS */
+        .menu-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .btn-game {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 15px 22px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #ffffff;
+            background: linear-gradient(135deg, #212840, #151a2d);
+            border: 1px solid #384366;
+            border-radius: 16px;
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.5);
+            transition: transform 0.1s, border-color 0.2s;
+        }
+
+        .btn-game:active {
+            transform: scale(0.96);
+            border-color: #00F2FE;
+        }
+
+        .btn-game .icon { font-size: 1.4rem; }
+
+        /* FOOTER */
+        .footer-text {
+            font-size: 0.8rem;
+            color: #717d96;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-top: 6px;
+            text-align: center;
+        }
+
+        /* OPTIONS MODAL */
+        .options-card {
+            background: #151a2d;
+            border: 1px solid #2e3754;
+            border-radius: 20px;
+            padding: 20px 16px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .opt-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .opt-label {
+            font-size: 0.88rem;
+            color: #ffd700;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .opt-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-opt {
+            flex: 1;
+            padding: 12px 6px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            background: #1e253b;
+            color: #a0aec0;
+            border: 1px solid #384366;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .btn-opt.selected {
+            background: linear-gradient(135deg, #00F2FE, #0077FE);
+            color: #fff;
+            border-color: #00F2FE;
+            box-shadow: 0 0 12px rgba(0, 242, 254, 0.4);
+        }
+
+        .btn-start {
+            width: 100%;
+            padding: 14px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-back {
+            padding: 8px 14px;
+            font-size: 0.82rem;
+            font-weight: bold;
+            background: #212840;
+            color: #ccc;
+            border: 1px solid #384366;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        /* GAME HEADERS */
+        .game-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 6px;
+        }
+
+        .game-title-text {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #00F2FE;
+        }
+
+        .game-status-bar {
+            font-size: 0.82rem;
+            color: #ffd700;
+            font-weight: 700;
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.25);
+            padding: 5px 10px;
+            border-radius: 10px;
+            width: 100%;
+            text-align: center;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ================= GAME BOARDS ================= */
+        
+        /* 1. XOX Board */
+        .xox-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: min(310px, 82vw);
+            height: min(310px, 82vw);
+            margin: auto;
+        }
+        .xox-cell {
+            background: #1a2035;
+            border: 2px solid #2e3754;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.8rem;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+        .xox-cell.x { color: #00F2FE; text-shadow: 0 0 10px rgba(0,242,254,0.5); }
+        .xox-cell.o { color: #ff007f; text-shadow: 0 0 10px rgba(255,0,127,0.5); }
+
+        /* 2. Connect 4 Board */
+        .c4-board {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            background: #1a2035;
+            padding: 10px;
+            border-radius: 16px;
+            border: 2px solid #2e3754;
+            width: min(350px, 94vw);
+            height: min(300px, 78vw);
+            margin: auto;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+        }
+        .c4-cell {
+            background: #0d0f18;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+        }
+        .c4-cell.p1 { background: radial-gradient(circle, #ffd700, #b8860b); box-shadow: 0 0 8px #ffd700; }
+        .c4-cell.p2 { background: radial-gradient(circle, #ff007f, #8b0042); box-shadow: 0 0 8px #ff007f; }
+
+        /* 3. Checkers Board */
+        .checkers-board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            width: min(340px, 90vw);
+            height: min(340px, 90vw);
+            border: 3px solid #2e3754;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: auto;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+        }
+        .chk-tile {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .chk-tile.light { background: #252d47; }
+        .chk-tile.dark { background: #121625; }
+        .chk-tile.selected-tile { background: #1e4976 !important; }
+        
+        .chk-piece {
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #fff;
+        }
+        .chk-piece.p1 { background: radial-gradient(circle, #ef4444, #991b1b); }
+        .chk-piece.p2 { background: radial-gradient(circle, #3b82f6, #1e40af); }
+        .chk-piece.king::after { content: "👑"; font-size: 0.85rem; }
+
+        /* 4. Snake & Ladder Board */
+        .snl-container {
+            position: relative;
+            width: min(340px, 92vw);
+            height: min(400px, 55vh);
+            background: #151a2d;
+            border-radius: 14px;
+            border: 2px solid #2e3754;
+            overflow: hidden;
+            margin: auto;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+        }
+        .snl-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            width: 100%;
+            height: 100%;
+        }
+        .snl-tile {
+            position: relative;
+            padding: 1px;
+            font-size: 0.55rem;
+            font-weight: bold;
+            color: #64748b;
+            border: 1px solid rgba(255,255,255,0.03);
+        }
+        .snl-tile.even { background: #1c233a; }
+        .snl-tile.odd { background: #121625; }
+        .snl-piece {
+            position: absolute; width: 16px; height: 16px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 0.55rem;
+            z-index: 5; border: 1.5px solid #fff; transition: all 0.25s ease-in-out;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.8);
+        }
+        .snl-piece.p1 { background: radial-gradient(circle, #ffd700, #b8860b); color: #000; }
+        .snl-piece.p2 { background: radial-gradient(circle, #ff007f, #8b0042); color: #fff; }
+
+        /* Dice styling */
+        .dice-3d {
+            width: 52px; height: 52px; background: #fff; border-radius: 12px;
+            display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+            padding: 6px; cursor: pointer; box-shadow: 0 5px 12px rgba(0,0,0,0.6);
+        }
+        .pip { background: #111; border-radius: 50%; width: 8px; height: 8px; margin: auto; display: none; }
+
+        /* 5. Omi Board */
+        .omi-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            height: 100%;
+            padding: 4px;
+        }
+        .omi-table {
+            position: relative;
+            width: min(320px, 88vw);
+            height: min(320px, 88vw);
+            background: radial-gradient(circle, #0f5132, #052c1e);
+            border: 5px solid #198754;
+            border-radius: 50%;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .omi-card-slot {
+            position: absolute;
+            width: 46px; height: 66px;
+            background: rgba(255,255,255,0.08);
+            border: 1px dashed rgba(255,255,255,0.3);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; font-weight: bold;
+        }
+        .omi-card-slot.top { top: 18px; }
+        .omi-card-slot.bottom { bottom: 18px; }
+        .omi-card-slot.left { left: 18px; }
+        .omi-card-slot.right { right: 18px; }
+
+        .omi-hand {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            max-width: 100%;
+            padding: 8px 4px;
+        }
+        .card-ui {
+            width: 48px; height: 70px;
+            background: #fff; color: #111;
+            border-radius: 8px; font-weight: 800; font-size: 0.9rem;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5); cursor: pointer; flex-shrink: 0;
+            border: 1px solid #ddd;
+        }
+        .card-ui.red { color: #dc2626; }
+
+    </style>
+</head>
+<body>
+
+    <!-- SCREEN 1: MAIN MENU -->
+    <div class="screen active" id="scrMenu">
+        <div class="header-frame">
+            <h1 class="main-title">NR GAME BOX</h1>
+        </div>
+
+        <div class="menu-list">
+            <button class="btn-game" onclick="selectGame('omi')">
+                <span>Omi Game</span> <span class="icon">🎴</span>
+            </button>
+            <button class="btn-game" onclick="selectGame('checkers')">
+                <span>Checkers</span> <span class="icon">⚪</span>
+            </button>
+            <button class="btn-game" onclick="selectGame('snake')">
+                <span>Snake and Ladder</span> <span class="icon">🐍</span>
+            </button>
+            <button class="btn-game" onclick="selectGame('xox')">
+                <span>XOX Game</span> <span class="icon">❌</span>
+            </button>
+            <button class="btn-game" onclick="selectGame('connect4')">
+                <span>Connect 4</span> <span class="icon">🔴</span>
+            </button>
+        </div>
+
+        <div class="footer-text">Created by Notiya Real</div>
+    </div>
+
+    <!-- SCREEN 2: GAME OPTIONS -->
+    <div class="screen" id="scrOptions">
+        <div class="header-frame">
+            <h1 class="main-title" id="optGameTitle">GAME SETUP</h1>
+        </div>
+
+        <div class="options-card">
+            <div class="opt-group">
+                <div class="opt-label">තෝරන්න (Mode):</div>
+                <div class="opt-buttons">
+                    <button class="btn-opt selected" id="btnModeAuto" onclick="setMode('auto')">Auto Play (Vs AI)</button>
+                    <button class="btn-opt" id="btnModeMulti" onclick="setMode('multiple')">Multiple (2 Players)</button>
+                </div>
+            </div>
+
+            <div class="opt-group">
+                <div class="opt-label">අමාරු මට්ටම (Difficulty):</div>
+                <div class="opt-buttons">
+                    <button class="btn-opt selected" id="btnDiffEasy" onclick="setDiff('easy')">Easy</button>
+                    <button class="btn-opt" id="btnDiffMiddle" onclick="setDiff('middle')">Middle</button>
+                    <button class="btn-opt" id="btnDiffHard" onclick="setDiff('hard')">Hard</button>
+                </div>
+            </div>
+
+            <button class="btn-start" onclick="launchSelectedGame()">Play Game ▶</button>
+            <button class="btn-back" onclick="showScreen('scrMenu')">◀ ප්‍රධාන මෙනුවට</button>
+        </div>
+
+        <div class="footer-text">Created by Notiya Real</div>
+    </div>
+
+    <!-- SCREEN 3: GAME PLAY CONTAINER -->
+    <div class="screen" id="scrPlay">
+        <div class="game-nav">
+            <button class="btn-back" onclick="showScreen('scrMenu')">◀ Menu</button>
+            <div class="game-title-text" id="playGameTitle">GAME</div>
+            <button class="btn-back" onclick="resetCurrentGame()">🔄 Reset</button>
+        </div>
+
+        <div class="game-status-bar" id="gameStatus">සූදානම් වන්න...</div>
+
+        <!-- GAME SPECIFIC VIEWS -->
+        <div id="viewXox" style="display:none; width:100%;">
+            <div class="xox-board" id="xoxBoard"></div>
+        </div>
+
+        <div id="viewC4" style="display:none; width:100%;">
+            <div class="c4-board" id="c4Board"></div>
+        </div>
+
+        <div id="viewCheckers" style="display:none; width:100%;">
+            <div class="checkers-board" id="chkBoard"></div>
+        </div>
+
+        <div id="viewSnake" style="display:none; width:100%; text-align:center;">
+            <div class="snl-container">
+                <div class="snl-grid" id="snlGrid"></div>
+                <div class="snl-piece p1" id="snlP1">🟡</div>
+                <div class="snl-piece p2" id="snlP2">🤖</div>
+            </div>
+            <div style="display:flex; justify-content:center; align-items:center; gap:15px; margin-top:10px;">
+                <div class="dice-3d" id="snlDice" onclick="handleSnakeDiceRoll()">
+                    <div class="pip" id="dp1"></div><div class="pip" id="dp2"></div><div class="pip" id="dp3"></div>
+                    <div class="pip" id="dp4"></div><div class="pip" id="dp5"></div><div class="pip" id="dp6"></div>
+                    <div class="pip" id="dp7"></div><div class="pip" id="dp8"></div><div class="pip" id="dp9"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="viewOmi" style="display:none; width:100%; height:78vh;">
+            <div class="omi-container">
+                <div class="omi-table">
+                    <div class="omi-card-slot top" id="omiSlotTop">🤖</div>
+                    <div class="omi-card-slot left" id="omiSlotLeft">🤖</div>
+                    <div class="omi-card-slot right" id="omiSlotRight">🤖</div>
+                    <div class="omi-card-slot bottom" id="omiSlotBottom">ඔබ</div>
+                </div>
+                <div style="font-size:0.85rem; font-weight:bold; color:#ffd700;" id="omiTrumpText">තුරුම්පුව: -</div>
+                <div class="omi-hand" id="omiHand"></div>
+            </div>
+        </div>
+
+        <div class="footer-text">Created by Notiya Real</div>
+    </div>
+
+    <script>
+        // APP NAVIGATION & STATE
+        let currentGame = '';
+        let currentMode = 'auto'; // 'auto' (Vs AI) or 'multiple' (2 Players)
+        let currentDiff = 'easy'; // 'easy', 'middle', 'hard'
+
+        function showScreen(scrId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(scrId).classList.add('active');
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('btnModeAuto').classList.toggle('selected', mode === 'auto');
+            document.getElementById('btnModeMulti').classList.toggle('selected', mode === 'multiple');
+        }
+
+        function setDiff(diff) {
+            currentDiff = diff;
+            document.getElementById('btnDiffEasy').classList.toggle('selected', diff === 'easy');
+            document.getElementById('btnDiffMiddle').classList.toggle('selected', diff === 'middle');
+            document.getElementById('btnDiffHard').classList.toggle('selected', diff === 'hard');
+        }
+
+        function selectGame(gameKey) {
+            currentGame = gameKey;
+            if (gameKey === 'omi') {
+                // Omi direct launch (No Mode / Difficulty Selection)
+                launchSelectedGame();
+            } else {
+                const names = { checkers: 'CHECKERS', snake: 'SNAKE AND LADDER', xox: 'XOX GAME', connect4: 'CONNECT 4' };
+                document.getElementById('optGameTitle').innerText = names[gameKey];
+                showScreen('scrOptions');
+            }
+        }
+
+        function launchSelectedGame() {
+            showScreen('scrPlay');
+            const names = { omi: 'OMI GAME', checkers: 'CHECKERS', snake: 'SNAKE AND LADDER', xox: 'XOX GAME', connect4: 'CONNECT 4' };
+            document.getElementById('playGameTitle').innerText = names[currentGame];
+
+            ['viewXox', 'viewC4', 'viewCheckers', 'viewSnake', 'viewOmi'].forEach(v => document.getElementById(v).style.display = 'none');
+
+            if (currentGame === 'xox') {
+                document.getElementById('viewXox').style.display = 'block';
+                initXox();
+            } else if (currentGame === 'connect4') {
+                document.getElementById('viewC4').style.display = 'block';
+                initConnect4();
+            } else if (currentGame === 'checkers') {
+                document.getElementById('viewCheckers').style.display = 'block';
+                initCheckers();
+            } else if (currentGame === 'snake') {
+                document.getElementById('viewSnake').style.display = 'block';
+                initSnake();
+            } else if (currentGame === 'omi') {
+                document.getElementById('viewOmi').style.display = 'block';
+                initOmi();
+            }
+        }
+
+        function resetCurrentGame() {
+            launchSelectedGame();
+        }
+
+        function setStatus(msg) {
+            document.getElementById('gameStatus').innerText = msg;
+        }
+
+        /* ================= 1. XOX GAME ================= */
+        let xoxBoardState = Array(9).fill('');
+        let xoxTurn = 'X';
+        let xoxActive = true;
+
+        function initXox() {
+            xoxBoardState = Array(9).fill('');
+            xoxTurn = 'X';
+            xoxActive = true;
+            const b = document.getElementById('xoxBoard');
+            b.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'xox-cell';
+                cell.onclick = () => handleXoxClick(i);
+                b.appendChild(cell);
+            }
+            setStatus(currentMode === 'auto' ? "ඔබේ වාරය (X)" : "Player 1 (X) ගේ වාරය");
+        }
+
+        function handleXoxClick(i) {
+            if (!xoxActive || xoxBoardState[i] !== '') return;
+            xoxBoardState[i] = xoxTurn;
+            renderXox();
+            if (checkXoxWin()) return;
+
+            if (currentMode === 'auto') {
+                xoxTurn = 'O';
+                xoxActive = false;
+                setStatus("🤖 AI සිතමින් පවතී...");
+                setTimeout(xoxAiMove, 400);
+            } else {
+                xoxTurn = xoxTurn === 'X' ? 'O' : 'X';
+                setStatus(`Player ${xoxTurn === 'X' ? '1 (X)' : '2 (O)'} ගේ වාරය`);
+            }
+        }
+
+        function xoxAiMove() {
+            let emptyIdxs = xoxBoardState.map((v, i) => v === '' ? i : null).filter(v => v !== null);
+            if (emptyIdxs.length === 0) return;
+
+            let move = emptyIdxs[Math.floor(Math.random() * emptyIdxs.length)];
+            
+            if (currentDiff !== 'easy') {
+                for (let idx of emptyIdxs) {
+                    xoxBoardState[idx] = 'O';
+                    if (checkXoxWinCondition('O')) { move = idx; xoxBoardState[idx] = ''; break; }
+                    xoxBoardState[idx] = 'X';
+                    if (checkXoxWinCondition('X')) { move = idx; xoxBoardState[idx] = ''; break; }
+                    xoxBoardState[idx] = '';
+                }
+            }
+
+            xoxBoardState[move] = 'O';
+            renderXox();
+            if (!checkXoxWin()) {
+                xoxTurn = 'X';
+                xoxActive = true;
+                setStatus("ඔබේ වාරය (X)");
+            }
+        }
+
+        function renderXox() {
+            const cells = document.querySelectorAll('.xox-cell');
+            xoxBoardState.forEach((val, i) => {
+                cells[i].innerText = val;
+                cells[i].className = `xox-cell ${val.toLowerCase()}`;
+            });
+        }
+
+        function checkXoxWinCondition(p) {
+            const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+            return wins.some(w => w.every(i => xoxBoardState[i] === p));
+        }
+
+        function checkXoxWin() {
+            if (checkXoxWinCondition(xoxTurn)) {
+                setStatus(`🎉 ${xoxTurn === 'X' ? 'Player X' : 'Player O'} ජයග්‍රහණය කළා!`);
+                xoxActive = false;
+                return true;
+            }
+            if (xoxBoardState.every(c => c !== '')) {
+                setStatus("🤝 සම විය (Draw)!");
+                xoxActive = false;
+                return true;
+            }
+            return false;
+        }
+
+        /* ================= 2. CONNECT 4 ================= */
+        const C4_ROWS = 6, C4_COLS = 7;
+        let c4Grid = [];
+        let c4Turn = 1;
+        let c4Active = true;
+
+        function initConnect4() {
+            c4Grid = Array(C4_ROWS).fill(null).map(() => Array(C4_COLS).fill(0));
+            c4Turn = 1;
+            c4Active = true;
+            const b = document.getElementById('c4Board');
+            b.innerHTML = '';
+            for (let r = 0; r < C4_ROWS; r++) {
+                for (let c = 0; c < C4_COLS; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'c4-cell';
+                    cell.onclick = () => handleC4Click(c);
+                    cell.id = `c4_${r}_${c}`;
+                    b.appendChild(cell);
+                }
+            }
+            setStatus(currentMode === 'auto' ? "ඔබේ වාරය (Yellow)" : "Player 1 (Yellow) ගේ වාරය");
+        }
+
+        function handleC4Click(col) {
+            if (!c4Active) return;
+            let row = -1;
+            for (let r = C4_ROWS - 1; r >= 0; r--) {
+                if (c4Grid[r][col] === 0) { row = r; break; }
+            }
+            if (row === -1) return;
+
+            c4Grid[row][col] = c4Turn;
+            renderC4();
+            if (checkC4Win(row, col)) {
+                setStatus(`🎉 Player ${c4Turn === 1 ? '1 (Yellow)' : '2 (Red)'} ජයග්‍රහණය කළා!`);
+                c4Active = false;
+                return;
+            }
+
+            if (currentMode === 'auto') {
+                c4Turn = 2;
+                c4Active = false;
+                setStatus("🤖 AI සිතමින් පවතී...");
+                setTimeout(c4AiMove, 500);
+            } else {
+                c4Turn = c4Turn === 1 ? 2 : 1;
+                setStatus(`Player ${c4Turn === 1 ? '1 (Yellow)' : '2 (Red)'} ගේ වාරය`);
+            }
+        }
+
+        function c4AiMove() {
+            let validCols = [];
+            for (let c = 0; c < C4_COLS; c++) {
+                if (c4Grid[0][c] === 0) validCols.push(c);
+            }
+            if (validCols.length === 0) return;
+
+            let col = validCols[Math.floor(Math.random() * validCols.length)];
+            let row = -1;
+            for (let r = C4_ROWS - 1; r >= 0; r--) {
+                if (c4Grid[r][col] === 0) { row = r; break; }
+            }
+
+            c4Grid[row][col] = 2;
+            renderC4();
+            if (checkC4Win(row, col)) {
+                setStatus("🤖 AI ජයග්‍රහණය කළා!");
+                c4Active = false;
+            } else {
+                c4Turn = 1;
+                c4Active = true;
+                setStatus("ඔබේ වාරය (Yellow)");
+            }
+        }
+
+        function renderC4() {
+            for (let r = 0; r < C4_ROWS; r++) {
+                for (let c = 0; c < C4_COLS; c++) {
+                    const el = document.getElementById(`c4_${r}_${c}`);
+                    el.className = 'c4-cell' + (c4Grid[r][c] === 1 ? ' p1' : c4Grid[r][c] === 2 ? ' p2' : '');
+                }
+            }
+        }
+
+        function checkC4Win(r, c) {
+            const p = c4Grid[r][c];
+            const checkDir = (dr, dc) => {
+                let count = 1;
+                for (let i = 1; i < 4; i++) {
+                    let nr = r + dr * i, nc = c + dc * i;
+                    if (nr >= 0 && nr < C4_ROWS && nc >= 0 && nc < C4_COLS && c4Grid[nr][nc] === p) count++;
+                    else break;
+                }
+                for (let i = 1; i < 4; i++) {
+                    let nr = r - dr * i, nc = c - dc * i;
+                    if (nr >= 0 && nr < C4_ROWS && nc >= 0 && nc < C4_COLS && c4Grid[nr][nc] === p) count++;
+                    else break;
+                }
+                return count >= 4;
+            };
+            return checkDir(0, 1) || checkDir(1, 0) || checkDir(1, 1) || checkDir(1, -1);
+        }
+
+        /* ================= 3. CHECKERS ================= */
+        let chkBoardState = [];
+        let chkSelected = null;
+        let chkTurn = 1;
+
+        function initCheckers() {
+            chkBoardState = Array(8).fill(null).map(() => Array(8).fill(0));
+            chkTurn = 1;
+            chkSelected = null;
+
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    if ((r + c) % 2 === 1) {
+                        if (r < 3) chkBoardState[r][c] = 2; // P2 (Blue)
+                        else if (r > 4) chkBoardState[r][c] = 1; // P1 (Red)
+                    }
+                }
+            }
+            renderCheckers();
+            setStatus(currentMode === 'auto' ? "ඔබේ වාරය (Red)" : "Player 1 (Red) ගේ වාරය");
+        }
+
+        function renderCheckers() {
+            const b = document.getElementById('chkBoard');
+            b.innerHTML = '';
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const tile = document.createElement('div');
+                    tile.className = `chk-tile ${(r + c) % 2 === 1 ? 'dark' : 'light'}`;
+                    if (chkSelected && chkSelected.r === r && chkSelected.c === c) {
+                        tile.classList.add('selected-tile');
+                    }
+                    tile.onclick = () => handleChkClick(r, c);
+
+                    const val = chkBoardState[r][c];
+                    if (val !== 0) {
+                        const piece = document.createElement('div');
+                        const pType = Math.abs(val);
+                        piece.className = `chk-piece ${pType === 1 ? 'p1' : 'p2'}`;
+                        if (val < 0) piece.classList.add('king');
+                        tile.appendChild(piece);
+                    }
+                    b.appendChild(tile);
+                }
+            }
+        }
+
+        function handleChkClick(r, c) {
+            const p = chkBoardState[r][c];
+            if (p !== 0 && ((chkTurn === 1 && p > 0) || (chkTurn === 2 && p > 0))) {
+                chkSelected = { r, c };
+                renderCheckers();
+                return;
+            }
+
+            if (chkSelected) {
+                if (validChkMove(chkSelected.r, chkSelected.c, r, c)) {
+                    chkBoardState[r][c] = chkBoardState[chkSelected.r][chkSelected.c];
+                    chkBoardState[chkSelected.r][chkSelected.c] = 0;
+
+                    if (r === 0 && chkBoardState[r][c] === 1) chkBoardState[r][c] = -1;
+                    if (r === 7 && chkBoardState[r][c] === 2) chkBoardState[r][c] = -2;
+
+                    chkSelected = null;
+                    renderCheckers();
+
+                    if (currentMode === 'auto') {
+                        chkTurn = 2;
+                        setStatus("🤖 AI සිතමින් පවතී...");
+                        setTimeout(chkAiMove, 500);
+                    } else {
+                        chkTurn = chkTurn === 1 ? 2 : 1;
+                        setStatus(`Player ${chkTurn === 1 ? '1 (Red)' : '2 (Blue)'} ගේ වාරය`);
+                    }
+                }
+            }
+        }
+
+        function validChkMove(fr, fc, tr, tc) {
+            if (chkBoardState[tr][tc] !== 0) return false;
+            let dr = tr - fr, dc = Math.abs(tc - fc);
+            if (Math.abs(dr) === 1 && dc === 1) return true;
+            return false;
+        }
+
+        function chkAiMove() {
+            let moves = [];
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    if (chkBoardState[r][c] === 2 || chkBoardState[r][c] === -2) {
+                        [ [r+1, c-1], [r+1, c+1] ].forEach(([tr, tc]) => {
+                            if (tr >= 0 && tr < 8 && tc >= 0 && tc < 8 && chkBoardState[tr][tc] === 0) {
+                                moves.push({ fr: r, fc: c, tr, tc });
+                            }
+                        });
+                    }
+                }
+            }
+
+            if (moves.length > 0) {
+                let m = moves[Math.floor(Math.random() * moves.length)];
+                chkBoardState[m.tr][m.tc] = chkBoardState[m.fr][m.fc];
+                chkBoardState[m.fr][m.fc] = 0;
+            }
+            chkTurn = 1;
+            renderCheckers();
+            setStatus("ඔබේ වාරය (Red)");
+        }
+
+        /* ================= 4. SNAKE AND LADDER ================= */
+        const SNL_LADDERS = { 4: 14, 9: 31, 20: 38, 28: 84, 40: 59, 63: 81, 71: 91 };
+        const SNL_SNAKES = { 17: 7, 54: 34, 62: 19, 64: 60, 87: 24, 93: 73, 99: 78 };
+        let snlP1Pos = 1, snlP2Pos = 1;
+        let snlTurn = 1;
+        let snlBusy = false;
+
+        function initSnake() {
+            snlP1Pos = 1; snlP2Pos = 1;
+            snlTurn = 1; snlBusy = false;
+            createSnlBoard();
+            updateSnlPieces();
+            showSnlDice(5);
+            setStatus(currentMode === 'auto' ? "🎲 දාදු කැටය Touch කරන්න!" : "Player 1 ගේ වාරය (🎲 Touch)");
+        }
+
+        function createSnlBoard() {
+            const grid = document.getElementById('snlGrid');
+            grid.innerHTML = '';
+            for (let r = 0; r < 10; r++) {
+                for (let c = 0; c < 10; c++) {
+                    let rowFromBottom = 9 - r;
+                    let colIdx = (rowFromBottom % 2 === 1) ? (9 - c) : c;
+                    let num = rowFromBottom * 10 + colIdx + 1;
+
+                    const tile = document.createElement('div');
+                    tile.className = `snl-tile ${num % 2 === 0 ? 'even' : 'odd'}`;
+                    tile.innerText = num;
+                    grid.appendChild(tile);
+                }
+            }
+        }
+
+        function updateSnlPieces() {
+            const getCoords = (num) => {
+                let zero = num - 1;
+                let r = Math.floor(zero / 10);
+                let c = zero % 10;
+                if (r % 2 === 1) c = 9 - c;
+                return { r: 9 - r, c };
+            };
+
+            let container = document.querySelector('.snl-container');
+            let w = container.clientWidth / 10, h = container.clientHeight / 10;
+
+            let c1 = getCoords(snlP1Pos), c2 = getCoords(snlP2Pos);
+            let p1 = document.getElementById('snlP1'), p2 = document.getElementById('snlP2');
+
+            p1.style.left = `${c1.c * w + w/2 - 8}px`; p1.style.top = `${c1.r * h + h/2 - 8}px`;
+            p2.style.left = `${c2.c * w + w/2 - 8}px`; p2.style.top = `${c2.r * h + h/2 - 8}px`;
+        }
+
+        function showSnlDice(val) {
+            const layouts = { 1:[5], 2:[3,7], 3:[3,5,7], 4:[1,3,7,9], 5:[1,3,5,7,9], 6:[1,3,4,6,7,9] };
+            for(let i=1;i<=9;i++) document.getElementById(`dp${i}`).style.display = 'none';
+            if(layouts[val]) layouts[val].forEach(i => document.getElementById(`dp${i}`).style.display = 'block');
+        }
+
+        function handleSnakeDiceRoll() {
+            if (snlBusy) return;
+            snlBusy = true;
+
+            let roll = Math.floor(Math.random() * 6) + 1;
+            showSnlDice(roll);
+
+            let cur = (snlTurn === 1) ? snlP1Pos : snlP2Pos;
+            cur = Math.min(100, cur + roll);
+
+            if (SNL_LADDERS[cur]) cur = SNL_LADDERS[cur];
+            else if (SNL_SNAKES[cur]) cur = SNL_SNAKES[cur];
+
+            if (snlTurn === 1) snlP1Pos = cur; else snlP2Pos = cur;
+            updateSnlPieces();
+
+            if (cur === 100) {
+                setStatus(`🏆 Player ${snlTurn} ජයග්‍රහණය කළා!`);
+                return;
+            }
+
+            if (currentMode === 'auto') {
+                snlTurn = 2;
+                setStatus("🤖 AI දාදු කැටය කරකවයි...");
+                setTimeout(() => {
+                    let aiRoll = Math.floor(Math.random() * 6) + 1;
+                    showSnlDice(aiRoll);
+                    snlP2Pos = Math.min(100, snlP2Pos + aiRoll);
+                    if (SNL_LADDERS[snlP2Pos]) snlP2Pos = SNL_LADDERS[snlP2Pos];
+                    else if (SNL_SNAKES[snlP2Pos]) snlP2Pos = SNL_SNAKES[snlP2Pos];
+                    updateSnlPieces();
+
+                    if (snlP2Pos === 100) setStatus("🤖 AI ජයග්‍රහණය කළා!");
+                    else {
+                        snlTurn = 1;
+                        snlBusy = false;
+                        setStatus("ඔබේ වාරය (🎲 Touch)");
+                    }
+                }, 700);
+            } else {
+                snlTurn = snlTurn === 1 ? 2 : 1;
+                snlBusy = false;
+                setStatus(`Player ${snlTurn} ගේ වාරය`);
+            }
+        }
+
+        /* ================= 5. OMI GAME ================= */
+        function initOmi() {
+            setStatus("🎴 Omi Game ආරම්භ විය! ඔබේ කාඩ්පත තෝරන්න.");
+            document.getElementById('omiTrumpText').innerText = "තුරුම්පුව: ♠ Spades";
+            
+            const hand = document.getElementById('omiHand');
+            hand.innerHTML = '';
+            const sampleCards = [
+                { val: 'A', suit: '♠', red: false },
+                { val: 'K', suit: '♥', red: true },
+                { val: 'Q', suit: '♦', red: true },
+                { val: 'J', suit: '♣', red: false },
+                { val: '10', suit: '♠', red: false },
+                { val: '9', suit: '♥', red: true }
+            ];
+
+            sampleCards.forEach(c => {
+                const card = document.createElement('div');
+                card.className = `card-ui ${c.red ? 'red' : ''}`;
+                card.innerHTML = `<div>${c.val}</div><div>${c.suit}</div>`;
+                card.onclick = () => {
+                    document.getElementById('omiSlotBottom').innerText = `${c.val}${c.suit}`;
+                    setStatus("ඔබ කාඩ්පතක් යොමු කළා!");
+                };
+                hand.appendChild(card);
+            });
+        }
+    </script>
+</body>
+  </html>
