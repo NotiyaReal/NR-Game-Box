@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect 4</title>
+    <style>
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        }
+        body { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            background: #0f0f15; 
+            color: #fff; 
+            padding: 15px;
+        }
+        .title { 
+            font-size: 2.6rem; 
+            font-weight: 900;
+            margin-bottom: 15px; 
+            background: linear-gradient(135deg, #BF953F 0%, #FCF6BA 25%, #B38728 50%, #FBF5B7 75%, #AA771C 100%);
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            letter-spacing: 3px;
+            text-align: center;
+            text-transform: uppercase;
+            filter: drop-shadow(0px 2px 8px rgba(212, 175, 55, 0.3));
+        }
+        .scoreboard {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            background: #1a1c23;
+            padding: 12px 16px;
+            border-radius: 14px;
+            border: 1px solid #2a2d3d;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        .score-box {
+            padding: 0 8px;
+        }
+        .score-box .label { font-size: 0.75rem; color: #8e95b0; margin-bottom: 4px; }
+        .score-box .val { font-size: 1.2rem; font-weight: bold; color: #f5f5f7; }
+
+        .status { 
+            font-size: 1.2rem; 
+            margin-bottom: 18px; 
+            color: #ffd700; 
+            font-weight: 600; 
+            height: 28px; 
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+        }
+
+        .board-container {
+            background: #1b1e2b;
+            padding: 12px;
+            border-radius: 20px;
+            border: 3px solid #2d3248;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+        }
+
+        .board { 
+            display: grid; 
+            grid-template-columns: repeat(7, 1fr); 
+            gap: 8px; 
+            max-width: 350px;
+        }
+
+        .cell { 
+            width: 42px; 
+            height: 42px; 
+            background-color: #0f1017; 
+            border-radius: 50%; 
+            cursor: pointer; 
+            transition: transform 0.15s ease, background-color 0.3s; 
+            box-shadow: inset 0 3px 6px rgba(0,0,0,0.8);
+        }
+
+        .cell:hover { transform: scale(1.05); }
+        .cell.p1 { 
+            background: radial-gradient(circle at 30% 30%, #ffd700, #b8860b); 
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
+        }
+        .cell.p2 { 
+            background: radial-gradient(circle at 30% 30%, #ff4b4b, #a70000); 
+            box-shadow: 0 0 12px rgba(255, 75, 75, 0.6);
+        }
+
+        .btn-reset { 
+            margin-top: 25px; 
+            padding: 12px 30px; 
+            font-size: 1rem; 
+            font-weight: bold; 
+            background: linear-gradient(135deg, #BF953F, #B38728); 
+            color: #0f1017; 
+            border: none; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            box-shadow: 0 4px 15px rgba(179, 135, 40, 0.4);
+            transition: all 0.2s;
+        }
+        .btn-reset:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+    <h1 class="title">Connect 4</h1>
+
+    <div class="scoreboard">
+        <div class="score-box">
+            <div class="label">තරඟ ගණන</div>
+            <div class="val" id="totalGames">0</div>
+        </div>
+        <div class="score-box">
+            <div class="label">ඔබ (Gold)</div>
+            <div class="val" id="p1Wins">0</div>
+        </div>
+        <div class="score-box">
+            <div class="label">Notiya (Red)</div>
+            <div class="val" id="p2Wins">0</div>
+        </div>
+        <div class="score-box">
+            <div class="label">Draw</div>
+            <div class="val" id="draws">0</div>
+        </div>
+    </div>
+
+    <div class="status" id="status">ඔබේ වාරය</div>
+
+    <div class="board-container">
+        <div class="board" id="board"></div>
+    </div>
+
+    <button class="btn-reset" onclick="resetBoard()">නැවත පටන්ගන්න</button>
+
+    <script>
+        const ROWS = 6;
+        const COLS = 7;
+        let board = [];
+        let gameActive = true;
+        let currentPlayer = 1; // 1: User (Gold), 2: Notiya AI (Red)
+
+        let totalGames = 0;
+        let p1Wins = 0;
+        let p2Wins = 0;
+        let draws = 0;
+
+        const statusDisplay = document.getElementById("status");
+        const boardElem = document.getElementById("board");
+
+        function initBoard() {
+            boardElem.innerHTML = "";
+            board = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
+            
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const cell = document.createElement("div");
+                    cell.classList.add("cell");
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+                    cell.addEventListener("click", () => handleCellClick(c));
+                    boardElem.appendChild(cell);
+                }
+            }
+        }
+
+        function handleCellClick(col) {
+            if (!gameActive || currentPlayer !== 1) return;
+
+            const row = getLowestEmptyRow(col);
+            if (row === -1) return; // Column full
+
+            makeMove(row, col, 1);
+
+            if (gameActive) {
+                currentPlayer = 2;
+                statusDisplay.innerText = "Notiya සිතමින් සිටී...";
+                setTimeout(aiTurn, 600);
+            }
+        }
+
+        function getLowestEmptyRow(col) {
+            for (let r = ROWS - 1; r >= 0; r--) {
+                if (board[r][col] === 0) return r;
+            }
+            return -1;
+        }
+
+        function makeMove(row, col, player) {
+            board[row][col] = player;
+            const cellIndex = row * COLS + col;
+            const cell = boardElem.children[cellIndex];
+            cell.classList.add(player === 1 ? "p1" : "p2");
+
+            if (checkWin(player)) {
+                gameActive = false;
+                totalGames++;
+                if (player === 1) {
+                    p1Wins++;
+                    statusDisplay.innerText = "ඔබ දිනුවා! 🎉";
+                } else {
+                    p2Wins++;
+                    statusDisplay.innerText = "Notiya දිනුවා! 🤖";
+                }
+                updateScoreboard();
+                return;
+            }
+
+            if (board.every(row => row.every(val => val !== 0))) {
+                gameActive = false;
+                totalGames++;
+                draws++;
+                statusDisplay.innerText = "ජය පරාජයෙන් තොරයි! 🤝";
+                updateScoreboard();
+                return;
+            }
+        }
+
+        function aiTurn() {
+            if (!gameActive) return;
+
+            const bestCol = getBestColumn();
+            const row = getLowestEmptyRow(bestCol);
+            makeMove(row, bestCol, 2);
+
+            if (gameActive) {
+                currentPlayer = 1;
+                statusDisplay.innerText = "ඔබේ වාරය";
+            }
+        }
+
+        function getBestColumn() {
+            let validCols = [];
+            for (let c = 0; c < COLS; c++) {
+                if (board[0][c] === 0) validCols.push(c);
+            }
+
+            // 1. AI එකට දිනන්න පුළුවන් තැනක් තියෙනවද බලන්න
+            for (let c of validCols) {
+                let r = getLowestEmptyRow(c);
+                board[r][c] = 2;
+                if (checkWin(2)) {
+                    board[r][c] = 0;
+                    return c;
+                }
+                board[r][c] = 0;
+            }
+
+            // 2. Player දිනන්න ඉන්නවා නම් Block කරන්න
+            for (let c of validCols) {
+                let r = getLowestEmptyRow(c);
+                board[r][c] = 1;
+                if (checkWin(1)) {
+                    board[r][c] = 0;
+                    return c;
+                }
+                board[r][c] = 0;
+            }
+
+            // 3. මැද Columns වලට මුල්තැන දෙන්න
+            const preference = [3, 2, 4, 1, 5, 0, 6];
+            for (let c of preference) {
+                if (validCols.includes(c)) return c;
+            }
+
+            return validCols[Math.floor(Math.random() * validCols.length)];
+        }
+
+        function checkWin(p) {
+            // Horizontal
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS - 3; c++) {
+                    if (board[r][c] === p && board[r][c+1] === p && board[r][c+2] === p && board[r][c+3] === p) return true;
+                }
+            }
+            // Vertical
+            for (let r = 0; r < ROWS - 3; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (board[r][c] === p && board[r+1][c] === p && board[r+2][c] === p && board[r+3][c] === p) return true;
+                }
+            }
+            // Diagonal /
+            for (let r = 3; r < ROWS; r++) {
+                for (let c = 0; c < COLS - 3; c++) {
+                    if (board[r][c] === p && board[r-1][c+1] === p && board[r-2][c+2] === p && board[r-3][c+3] === p) return true;
+                }
+            }
+            // Diagonal \
+            for (let r = 0; r < ROWS - 3; r++) {
+                for (let c = 0; c < COLS - 3; c++) {
+                    if (board[r][c] === p && board[r+1][c+1] === p && board[r+2][c+2] === p && board[r+3][c+3] === p) return true;
+                }
+            }
+            return false;
+        }
+
+        function updateScoreboard() {
+            document.getElementById("totalGames").innerText = totalGames;
+            document.getElementById("p1Wins").innerText = p1Wins;
+            document.getElementById("p2Wins").innerText = p2Wins;
+            document.getElementById("draws").innerText = draws;
+        }
+
+        function resetBoard() {
+            gameActive = true;
+            currentPlayer = 1;
+            statusDisplay.innerText = "ඔබේ වාරය";
+            initBoard();
+        }
+
+        initBoard();
+    </script>
+</body>
+</html>
