@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHECKERS - Notiya AI</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            background: #0f0f15; 
+            color: #fff; 
+            padding: 10px;
+        }
+        .title { 
+            font-size: 2.5rem; 
+            font-weight: 900;
+            margin-bottom: 8px; 
+            background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7);
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            letter-spacing: 3px;
+            text-align: center;
+        }
+        .scoreboard {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            background: #1a1c23;
+            padding: 10px 18px;
+            border-radius: 12px;
+            border: 1px solid #2a2d3d;
+            text-align: center;
+        }
+        .score-box { padding: 0 8px; }
+        .score-box .label { font-size: 0.75rem; color: #8e95b0; margin-bottom: 2px; }
+        .score-box .val { font-size: 1.1rem; font-weight: bold; color: #f5f5f7; }
+
+        .status { 
+            font-size: 0.95rem; 
+            margin-bottom: 12px; 
+            color: #ffd700; 
+            font-weight: 600; 
+            min-height: 32px; 
+            text-align: center; 
+            padding: 0 10px;
+        }
+        .status.warning { color: #ff6b6b; }
+
+        .board-container {
+            background: #2a2d3d;
+            padding: 8px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.7);
+        }
+
+        .board { 
+            display: grid; 
+            grid-template-columns: repeat(8, 42px); 
+            grid-template-rows: repeat(8, 42px); 
+            border: 2px solid #444;
+        }
+
+        .square {
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .square.light { background-color: #f0d9b5; }
+        .square.dark { background-color: #b58863; }
+        
+        /* අවසානයට කළ ඇදීම පෙන්වන Highlight එක */
+        .square.last-move { 
+            background-color: #8b6b23 !important; 
+            outline: 2px solid #ffd700; 
+            outline-offset: -2px; 
+        }
+
+        /* කැපීමේ පාරේ මැද නතරවන ස්ථාන (Intermediate Path) */
+        .square.path-step {
+            background-color: #556b2f !important;
+        }
+        .square.path-step::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background-color: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+        }
+
+        /* අවසාන ගමනාන්තය (Final Target) */
+        .square.highlight { background-color: #769656 !important; cursor: pointer; }
+        .square.highlight::after {
+            content: '';
+            width: 14px;
+            height: 14px;
+            background-color: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 6px rgba(0,0,0,0.5);
+        }
+
+        .piece {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.5);
+            transition: transform 0.15s;
+            z-index: 2;
+        }
+        .piece:active { transform: scale(0.9); }
+        .piece.player { background: radial-gradient(circle, #ffd700, #b8860b); color: #000; border: 2px solid #fff; }
+        .piece.ai { background: radial-gradient(circle, #333, #000); color: #fff; border: 2px solid #555; }
+        .piece.selected { border: 3px solid #00ffcc !important; transform: scale(1.08); }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-undo { background: #e0a96d; color: #111; }
+        .btn-reset { background: linear-gradient(135deg, #BF953F, #B38728); color: #000; }
+        .btn:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+    <h1 class="title">CHECKERS</h1>
+
+    <div class="scoreboard">
+        <div class="score-box"><div class="label">ඔබගේ ඉතිරි</div><div class="val" id="playerPieces">12</div></div>
+        <div class="score-box"><div class="label">Notiya ඉතිරි</div><div class="val" id="aiPieces">12</div></div>
+    </div>
+
+    <div class="status" id="status">ඔබේ වාරය (Gold)</div>
+
+    <div class="board-container">
+        <div class="board" id="board"></div>
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-undo" onclick="undoMove()">↩️ ආපසු ගන්න (Undo)</button>
+        <button class="btn btn-reset" onclick="resetGame()">නැවත පටන්ගන්න</button>
+    </div>
+
+    <script>
+        const ROWS = 8;
+        const COLS = 8;
+        let board = [];
+        let selectedPiece = null;
+        let activeMoves = [];
+        let gameActive = true;
+        let history = [];
+        let lastMove = null;
+
+        function initBoard() {
+            board = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
+            history = [];
+            selectedPiece = null;
+            lastMove = null;
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if ((r + c) % 2 === 1) {
+                        if (r < 3) board[r][c] = -1;
+                        else if (r > 4) board[r][c] = 1;
+                    }
+                }
+            }
+            gameActive = true;
+            setStatus("ඔබේ වාරය (Gold)");
+            renderBoard();
+            updateScores();
+        }
+
+        function setStatus(msg, isWarning = false) {
+            const statusElem = document.getElementById("status");
+            statusElem.innerText = msg;
+            if (isWarning) {
+                statusElem.classList.add("warning");
+            } else {
+                statusElem.classList.remove("warning");
+            }
+        }
+
+        function copyBoard(b) {
+            return b.map(row => [...row]);
+        }
+
+        function renderBoard() {
+            const boardElem = document.getElementById("board");
+            boardElem.innerHTML = "";
+
+            let currentValidMoves = gameActive ? getAllPlayerMoves(1, board) : [];
+            const hasMandatoryJumps = currentValidMoves.length > 0 && currentValidMoves[0].captured.length > 0;
+
+            let finalTargets = [];
+            let intermediateSteps = [];
+            if (selectedPiece) {
+                activeMoves.forEach(m => {
+                    finalTargets.push(m);
+                    m.steps.forEach((st, idx) => {
+                        if (idx < m.steps.length - 1) {
+                            intermediateSteps.push(st);
+                        }
+                    });
+                });
+            }
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const square = document.createElement("div");
+                    square.classList.add("square", (r + c) % 2 === 1 ? "dark" : "light");
+
+                    if (lastMove && ((r === lastMove.fromR && c === lastMove.fromC) || (r === lastMove.toR && c === lastMove.toC))) {
+                        square.classList.add("last-move");
+                    }
+
+                    if (intermediateSteps.some(st => st.r === r && st.c === c)) {
+                        square.classList.add("path-step");
+                    }
+
+                    const targetMove = finalTargets.find(m => m.finalR === r && m.finalC === c);
+                    if (targetMove) {
+                        square.classList.add("highlight");
+                        square.addEventListener("click", () => makePlayerMove(targetMove));
+                    }
+
+                    const val = board[r][c];
+                    if (val !== 0) {
+                        const piece = document.createElement("div");
+                        piece.classList.add("piece", val > 0 ? "player" : "ai");
+                        if (Math.abs(val) === 2) piece.innerText = "👑";
+
+                        if (selectedPiece && selectedPiece.r === r && selectedPiece.c === c) {
+                            piece.classList.add("selected");
+                        }
+
+                        if (val > 0 && gameActive) {
+                            piece.addEventListener("click", (e) => {
+                                e.stopPropagation();
+                                const pieceHasMove = currentValidMoves.some(m => m.startR === r && m.startC === c);
+
+                                if (hasMandatoryJumps && !pieceHasMove) {
+                                    setStatus("⚠️ කැපීමට ඉත්තෙක් සිටී! අනිවාර්යයෙන්ම වැඩිම ඉත්තන් ගණන කැපිය යුතුය.", true);
+                                } else if (!pieceHasMove) {
+                                    setStatus("⚠️ මෙම ඉත්තාට ගමන් කිරීමට ඉඩක් නැත.", true);
+                                } else {
+                                    setStatus("ඔබේ වාරය (Gold)");
+                                    selectPiece(r, c, currentValidMoves);
+                                }
+                            });
+                        }
+
+                        square.appendChild(piece);
+                    }
+
+                    boardElem.appendChild(square);
+                }
+            }
+        }
+
+        function selectPiece(r, c, currentValidMoves) {
+            selectedPiece = { r, c };
+            activeMoves = currentValidMoves.filter(m => m.startR === r && m.startC === c);
+            renderBoard();
+        }
+
+        function getAllPlayerMoves(playerSign, bState) {
+            let allJumps = [];
+            let normalMoves = [];
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if ((playerSign === 1 && bState[r][c] > 0) || (playerSign === -1 && bState[r][c] < 0)) {
+                        let jumps = getPieceJumpsRecursive(r, c, bState);
+                        allJumps.push(...jumps);
+                        if (allJumps.length === 0) {
+                            normalMoves.push(...getPieceNormals(r, c, bState));
+                        }
+                    }
+                }
+            }
+
+            if (allJumps.length > 0) {
+                let maxCap = Math.max(...allJumps.map(j => j.captured.length));
+                return allJumps.filter(j => j.captured.length === maxCap);
+            }
+
+            return normalMoves;
+        }
+
+        function getPieceJumpsRecursive(r, c, bState, currentPath = [], currentCaptured = []) {
+            let val = bState[r][c];
+            let isKing = Math.abs(val) === 2;
+            let dirs = [[-1,-1], [-1,1], [1,-1], [1,1]];
+            let foundJumps = [];
+
+            let startR = currentPath.length > 0 ? currentPath[0].fromR : r;
+            let startC = currentPath.length > 0 ? currentPath[0].fromC : c;
+
+            dirs.forEach(([dr, dc]) => {
+                if (!isKing) {
+                    let er = r + dr, ec = c + dc;
+                    let lr = r + 2*dr, lc = c + 2*dc;
+
+                    if (lr >= 0 && lr < ROWS && lc >= 0 && lc < COLS) {
+                        let isEnemy = bState[er][ec] !== 0 && (bState[er][ec] * val < 0);
+                        let notCaptured = !currentCaptured.some(p => p.r === er && p.c === ec);
+                        let isLandingEmpty = bState[lr][lc] === 0;
+
+                        if (isEnemy && notCaptured && isLandingEmpty) {
+                            let nextCaptured = [...currentCaptured, { r: er, c: ec }];
+                            let nextPath = [...currentPath, { fromR: r, fromC: c, r: lr, c: lc, jumpR: er, jumpC: ec }];
+
+                            let tempBoard = copyBoard(bState);
+                            tempBoard[lr][lc] = tempBoard[r][c];
+                            tempBoard[r][c] = 0;
+                            tempBoard[er][ec] = 0;
+
+                            let crown = (val === 1 && lr === 0) || (val === -1 && lr === 7);
+                            if (crown) tempBoard[lr][lc] = val > 0 ? 2 : -2;
+
+                            let further = getPieceJumpsRecursive(lr, lc, tempBoard, nextPath, nextCaptured);
+                            if (further.length > 0) {
+                                foundJumps.push(...further);
+                            } else {
+                                foundJumps.push({
+                                    startR: startR,
+                                    startC: startC,
+                                    steps: nextPath,
+                                    captured: nextCaptured,
+                                    finalR: lr,
+                                    finalC: lc
+                                });
+                            }
+                        }
+                    }
+                } else {
+                    let step = 1;
+                    let foundEnemy = null;
+
+                    while (true) {
+                        let nr = r + dr * step;
+                        let nc = c + dc * step;
+                        if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) break;
+
+                        if (bState[nr][nc] !== 0) {
+                            if (bState[nr][nc] * val > 0) break;
+                            let alreadyCap = currentCaptured.some(p => p.r === nr && p.c === nc);
+                            if (alreadyCap) break;
+                            if (foundEnemy) break;
+                            foundEnemy = { r: nr, c: nc };
+                        } else if (foundEnemy) {
+                            let lr = nr, lc = nc;
+                            let nextCaptured = [...currentCaptured, { r: foundEnemy.r, c: foundEnemy.c }];
+                            let nextPath = [...currentPath, { fromR: r, fromC: c, r: lr, c: lc, jumpR: foundEnemy.r, jumpC: foundEnemy.c }];
+
+                            let tempBoard = copyBoard(bState);
+                            tempBoard[lr][lc] = tempBoard[r][c];
+                            tempBoard[r][c] = 0;
+                            tempBoard[foundEnemy.r][foundEnemy.c] = 0;
+
+                            let further = getPieceJumpsRecursive(lr, lc, tempBoard, nextPath, nextCaptured);
+                            if (further.length > 0) {
+                                foundJumps.push(...further);
+                            } else {
+                                foundJumps.push({
+                                    startR: startR,
+                                    startC: startC,
+                                    steps: nextPath,
+                                    captured: nextCaptured,
+                                    finalR: lr,
+                                    finalC: lc
+                                });
+                            }
+                            break;
+                        }
+                        step++;
+                    }
+                }
+            });
+
+            return foundJumps;
+        }
+
+        function getPieceNormals(r, c, bState) {
+            let val = bState[r][c];
+            let moves = [];
+
+            if (Math.abs(val) === 1) {
+                let dirs = val > 0 ? [[-1,-1], [-1,1]] : [[1,-1], [1,1]];
+                dirs.forEach(([dr, dc]) => {
+                    let nr = r + dr, nc = c + dc;
+                    if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && bState[nr][nc] === 0) {
+                        moves.push({
+                            startR: r,
+                            startC: c,
+                            steps: [{ fromR: r, fromC: c, r: nr, c: nc }],
+                            captured: [],
+                            finalR: nr,
+                            finalC: nc
+                        });
+                    }
+                });
+            } else if (Math.abs(val) === 2) {
+                let dirs = [[-1,-1], [-1,1], [1,-1], [1,1]];
+                dirs.forEach(([dr, dc]) => {
+                    let step = 1;
+                    while (true) {
+                        let nr = r + dr * step;
+                        let nc = c + dc * step;
+                        if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS || bState[nr][nc] !== 0) break;
+                        moves.push({
+                            startR: r,
+                            startC: c,
+                            steps: [{ fromR: r, fromC: c, r: nr, c: nc }],
+                            captured: [],
+                            finalR: nr,
+                            finalC: nc
+                        });
+                        step++;
+                    }
+                });
+            }
+            return moves;
+        }
+
+        async function makePlayerMove(move) {
+            history.push(JSON.stringify({ board: copyBoard(board), lastMove }));
+            gameActive = false;
+
+            lastMove = { fromR: move.startR, fromC: move.startC, toR: move.finalR, toC: move.finalC };
+
+            for (let i = 0; i < move.steps.length; i++) {
+                let st = move.steps[i];
+                let val = board[st.fromR][st.fromC];
+                board[st.fromR][st.fromC] = 0;
+                board[st.r][st.c] = val;
+
+                if (st.jumpR !== undefined) {
+                    board[st.jumpR][st.jumpC] = 0;
+                }
+
+                if (val === 1 && st.r === 0) board[st.r][st.c] = 2;
+
+                selectedPiece = { r: st.r, c: st.c };
+                renderBoard();
+                updateScores();
+
+                if (move.steps.length > 1) {
+                    await new Promise(res => setTimeout(res, 280));
+                }
+            }
+
+            selectedPiece = null;
+            activeMoves = [];
+            renderBoard();
+
+            if (checkGameOver()) return;
+
+            setStatus("Notiya සිතමින් සිටී...");
+            setTimeout(aiTurn, 1200);
+        }
+
+        async function aiTurn() {
+            let aiMoves = getAllPlayerMoves(-1, board);
+
+            if (aiMoves.length > 0) {
+                let chosen = aiMoves[Math.floor(Math.random() * aiMoves.length)];
+                lastMove = { fromR: chosen.startR, fromC: chosen.startC, toR: chosen.finalR, toC: chosen.finalC };
+
+                for (let i = 0; i < chosen.steps.length; i++) {
+                    let st = chosen.steps[i];
+                    let val = board[st.fromR][st.fromC];
+                    board[st.fromR][st.fromC] = 0;
+                    board[st.r][st.c] = val;
+
+                    if (st.jumpR !== undefined) {
+                        board[st.jumpR][st.jumpC] = 0;
+                    }
+
+                    if (val === -1 && st.r === 7) board[st.r][st.c] = -2;
+
+                    renderBoard();
+                    updateScores();
+
+                    if (chosen.steps.length > 1) {
+                        await new Promise(res => setTimeout(res, 300));
+                    }
+                }
+            }
+
+            gameActive = true;
+            setStatus("ඔබේ වාරය (Gold)");
+            renderBoard();
+            updateScores();
+            checkGameOver();
+        }
+
+        function undoMove() {
+            if (history.length === 0) {
+                alert("ආපසු යාමට පියවර නොමැත!");
+                return;
+            }
+            let previous = JSON.parse(history.pop());
+            board = previous.board;
+            lastMove = previous.lastMove;
+            selectedPiece = null;
+            activeMoves = [];
+            gameActive = true;
+            setStatus("ඔබේ වාරය (Gold)");
+            renderBoard();
+            updateScores();
+        }
+
+        function updateScores() {
+            let pCount = 0, aiCount = 0;
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (board[r][c] > 0) pCount++;
+                    else if (board[r][c] < 0) aiCount++;
+                }
+            }
+            document.getElementById("playerPieces").innerText = pCount;
+            document.getElementById("aiPieces").innerText = aiCount;
+        }
+
+        function checkGameOver() {
+            let pCount = parseInt(document.getElementById("playerPieces").innerText);
+            let aiCount = parseInt(document.getElementById("aiPieces").innerText);
+
+            if (aiCount === 0) {
+                setStatus("ඔබ දිනුවා! 🎉");
+                gameActive = false;
+                return true;
+            } else if (pCount === 0) {
+                setStatus("Notiya දිනුවා! 🤖");
+                gameActive = false;
+                return true;
+            }
+            return false;
+        }
+
+        function resetGame() {
+            initBoard();
+        }
+
+        initBoard();
+    </script>
+</body>
+</html>
