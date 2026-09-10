@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NR GAME BOX</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header-title {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: #ffcc00;
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+            margin-top: 10px;
+            margin-bottom: 25px;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        .menu-container {
+            width: 100%;
+            max-width: 450px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .game-card {
+            background: #1e1e1e;
+            border: 2px solid #333;
+            border-radius: 12px;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .game-card:hover {
+            transform: translateY(-2px);
+            border-color: #ffcc00;
+        }
+
+        .game-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .play-btn {
+            background-color: #ffcc00;
+            color: #000000;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .play-btn:hover {
+            background-color: #e6b800;
+        }
+
+        .game-view {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000;
+            z-index: 1000;
+            flex-direction: column;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .footer-text {
+            margin-top: auto;
+            padding-top: 30px;
+            padding-bottom: 10px;
+            font-size: 0.85rem;
+            color: #888888;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h1 class="header-title">NR GAME BOX</h1>
+
+    <div class="menu-container">
+        
+        <div class="game-card">
+            <span class="game-title">Snake and Ladder</span>
+            <button class="play-btn" onclick="openGame('Snake and Ladder.html')">PLAY</button>
+        </div>
+
+        <div class="game-card">
+            <span class="game-title">Omi</span>
+            <button class="play-btn" onclick="openGame('omi.html')">PLAY</button>
+        </div>
+
+        <div class="game-card">
+            <span class="game-title">Checkers</span>
+            <button class="play-btn" onclick="openGame('checkers.html')">PLAY</button>
+        </div>
+
+        <div class="game-card">
+            <span class="game-title">Connect 4</span>
+            <button class="play-btn" onclick="openGame('Connect 4.html')">PLAY</button>
+        </div>
+
+        <div class="game-card">
+            <span class="game-title">X O X</span>
+            <button class="play-btn" onclick="openGame('X O X.html')">PLAY</button>
+        </div>
+
+    </div>
+
+    <div class="footer-text">Made by Notiya Real</div>
+
+    <!-- Game View Modal -->
+    <div id="gameView" class="game-view">
+        <iframe id="gameFrame" src=""></iframe>
+    </div>
+
+    <script>
+        function openGame(file) {
+            document.getElementById('gameFrame').src = file;
+            document.getElementById('gameView').style.display = 'flex';
+        }
+
+        function closeGame() {
+            document.getElementById('gameView').style.display = 'none';
+            document.getElementById('gameFrame').src = '';
+        }
+    </script>
+
+</body>
+</html>
