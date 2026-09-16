@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Realistic Air Strike 2D</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            touch-action: none;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #050b14;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 450px;
+            max-height: 800px;
+            background: #091221;
+            box-shadow: 0 0 35px rgba(0, 180, 216, 0.4);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 2px solid #1c2d42;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .ui-panel {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            display: flex;
+            justify-content: space-between;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .hud {
+            color: #90e0ef;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(0, 180, 216, 0.6);
+            background: rgba(10, 25, 47, 0.6);
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(144, 224, 239, 0.3);
+        }
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(9, 18, 33, 0.92);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        .title {
+            font-size: 32px;
+            color: #00b4d8;
+            text-shadow: 0 0 15px #90e0ef;
+            margin-bottom: 10px;
+            font-weight: 900;
+            letter-spacing: 1px;
+        }
+        .subtitle {
+            font-size: 13px;
+            color: #a0aec0;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        .btn {
+            background: linear-gradient(45deg, #0077b6, #00b4d8);
+            color: white;
+            border: none;
+            padding: 14px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 30px;
+            box-shadow: 0 0 15px rgba(0, 180, 216, 0.5);
+            cursor: pointer;
+        }
+        .btn:active { transform: scale(0.95); }
+        #game-over-screen { display: none; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div class="ui-panel">
+        <div class="hud">SCORE: <span id="score">0</span></div>
+        <div class="hud" style="color:#ff4d6d;">HP: <span id="hp">100</span>%</div>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="start-screen" class="overlay">
+        <h1 class="title">SKY FORCE COMBAT</h1>
+        <p class="subtitle">Screen එක ඕනෑම තැනකින් <b>Swipe (Touch Drag)</b> කරමින් Jet එක පාලනය කරන්න!<br>ස්වයංක්‍රීයව වෙඩි තබයි 🔥</p>
+        <button class="btn" onclick="startGame()">LAUNCH JET</button>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over-screen" class="overlay">
+        <h1 class="title" style="color: #ff4d6d;">SHOT DOWN!</h1>
+        <p class="subtitle">ලබාගත් ලකුණු: <span id="final-score" style="color:#90e0ef; font-weight:bold;">0</span></p>
+        <button class="btn" onclick="startGame()">RETRY</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const container = document.getElementById('game-container');
+
+    function resizeCanvas() {
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Game Variables
+    let score = 0;
+    let playerHp = 100;
+    let isGameRunning = false;
+    let bullets = [];
+    let enemyBullets = [];
+    let enemies = [];
+    let particles = [];
+    let clouds = [];
+    let spawnTimer = 0;
+
+    // Smooth Swipe Movement Dynamics
+    const player = {
+        x: canvas.width / 2,
+        y: canvas.height - 120,
+        vx: 0,
+        vy: 0,
+        targetVx: 0,
+        targetVy: 0,
+        roll: 0, // Tilt angle during turn
+        width: 44,
+        height: 52
+    };
+
+    // Background Clouds (Depth Effect)
+    for (let i = 0; i < 6; i++) {
+        clouds.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 40 + 30,
+            speed: Math.random() * 0.8 + 0.4
+        });
+    }
+
+    // Touch Drag (Relative Swipe System)
+    let lastTouchX = 0;
+    let lastTouchY = 0;
+    let isTouching = false;
+
+    function handleStart(x, y) {
+        lastTouchX = x;
+        lastTouchY = y;
+        isTouching = true;
+    }
+
+    function handleMove(x, y) {
+        if (!isTouching || !isGameRunning) return;
+        let dx = x - lastTouchX;
+        let dy = y - lastTouchY;
+
+        player.targetVx = dx * 0.45;
+        player.targetVy = dy * 0.45;
+
+        lastTouchX = x;
+        lastTouchY = y;
+    }
+
+    function handleEnd() {
+        isTouching = false;
+        player.targetVx = 0;
+        player.targetVy = 0;
+    }
+
+    // Touch Listeners
+    canvas.addEventListener('touchstart', e => handleStart(e.touches[0].clientX, e.touches[0].clientY));
+    canvas.addEventListener('touchmove', e => handleMove(e.touches[0].clientX, e.touches[0].clientY));
+    canvas.addEventListener('touchend', handleEnd);
+
+    // Mouse Listeners (For PC testing)
+    canvas.addEventListener('mousedown', e => handleStart(e.clientX, e.clientY));
+    canvas.addEventListener('mousemove', e => { if (isTouching) handleMove(e.clientX, e.clientY); });
+    canvas.addEventListener('mouseup', handleEnd);
+
+    // Draw Detailed Jet Fighter (F-22 Raptor Style)
+    function drawDetailedJet(x, y, roll, colorPrimary, colorSecondary, isEnemy = false) {
+        ctx.save();
+        ctx.translate(x, y);
+
+        if (isEnemy) ctx.rotate(Math.PI); // Enemy faces downwards
+        else ctx.rotate(roll * 0.04); // Roll tilt when swiping
+
+        // Wings Shadows
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.beginPath();
+        ctx.moveTo(0, 5);
+        ctx.lineTo(26, 25);
+        ctx.lineTo(-26, 25);
+        ctx.fill();
+
+        // Main Wings & Fuselage
+        ctx.fillStyle = colorPrimary;
+        ctx.beginPath();
+        ctx.moveTo(0, -26); // Nose
+        ctx.lineTo(6, -10);
+        ctx.lineTo(24, 12); // Right wing tip
+        ctx.lineTo(16, 20);
+        ctx.lineTo(6, 16);
+        ctx.lineTo(0, 24); // Tail
+        ctx.lineTo(-6, 16);
+        ctx.lineTo(-16, 20);
+        ctx.lineTo(-24, 12); // Left wing tip
+        ctx.lineTo(-6, -10);
+        ctx.closePath();
+        ctx.fill();
+
+        // Secondary Panel Accent & Cockpit
+        ctx.fillStyle = colorSecondary;
+        ctx.beginPath();
+        ctx.moveTo(0, -18);
+        ctx.lineTo(3, -6);
+        ctx.lineTo(0, 10);
+        ctx.lineTo(-3, -6);
+        ctx.fill();
+
+        // Glass Canopy (Cockpit Glow)
+        let gradient = ctx.createLinearGradient(0, -15, 0, 0);
+        gradient.addColorStop(0, isEnemy ? '#ff758f' : '#4cc9f0');
+        gradient.addColorStop(1, isEnemy ? '#c9184a' : '#0077b6');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.ellipse(0, -6, 3, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Engine Afterburner Fire (Player only)
+        if (!isEnemy) {
+            ctx.fillStyle = '#ffb703';
+            ctx.beginPath();
+            ctx.moveTo(-4, 24);
+            ctx.lineTo(0, 32 + Math.random() * 8);
+            ctx.lineTo(4, 24);
+            ctx.fill();
+        }
+
+        ctx.restore();
+    }
+
+    // Enemy Fighter Jet Class
+    class Enemy {
+        constructor() {
+            this.x = Math.random() * (canvas.width - 60) + 30;
+            this.y = -40;
+            this.speed = Math.random() * 1.5 + 2;
+            this.shootTimer = 0;
+            this.vx = (Math.random() - 0.5) * 1.5;
+        }
+
+        update() {
+            this.y += this.speed;
+            this.x += this.vx;
+
+            // Bounce off edges
+            if (this.x < 25 || this.x > canvas.width - 25) this.vx *= -1;
+
+            this.shootTimer++;
+            if (this.shootTimer % 65 === 0) {
+                enemyBullets.push({ x: this.x, y: this.y + 20, vy: 5 });
+            }
+        }
+
+        draw() {
+            drawDetailedJet(this.x, this.y, 0, '#3a5a40', '#588157', true);
+        }
+    }
+
+    // Explosion Effect Particles
+    function createExplosion(x, y, color) {
+        for (let i = 0; i < 18; i++) {
+            particles.push({
+                x: x, y: y,
+                vx: (Math.random() - 0.5) * 7,
+                vy: (Math.random() - 0.5) * 7,
+                radius: Math.random() * 3 + 1,
+                color: color,
+                life: 1
+            });
+        }
+    }
+
+    // Main Game Loop
+    function animate() {
+        if (!isGameRunning) return;
+        requestAnimationFrame(animate);
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw Sky Background & Clouds
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+        clouds.forEach(cloud => {
+            cloud.y += cloud.speed;
+            if (cloud.y > canvas.height + 50) {
+                cloud.y = -50;
+                cloud.x = Math.random() * canvas.width;
+            }
+            ctx.beginPath();
+            ctx.arc(cloud.x, cloud.y, cloud.size, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        // Smooth Physics Update for Player Inertia
+        player.vx += (player.targetVx - player.vx) * 0.15;
+        player.vy += (player.targetVy - player.vy) * 0.15;
+        player.x += player.vx;
+        player.y += player.vy;
+        player.roll = player.vx * 3; // Tilt amount
+
+        // Inertia Damping (Deceleration when swipe stops)
+        player.targetVx *= 0.88;
+        player.targetVy *= 0.88;
+
+        // Keep Player Inside Screen Boundaries
+        player.x = Math.max(26, Math.min(canvas.width - 26, player.x));
+        player.y = Math.max(30, Math.min(canvas.height - 40, player.y));
+
+        // Draw Player Fighter Jet
+        drawDetailedJet(player.x, player.y, player.roll, '#1d3557', '#457b9d');
+
+        // Fire Player Laser Bullets
+        spawnTimer++;
+        if (spawnTimer % 9 === 0) {
+            bullets.push({ x: player.x - 12, y: player.y - 20, vy: -12 });
+            bullets.push({ x: player.x + 12, y: player.y - 20, vy: -12 });
+        }
+
+        // Spawn Enemy Jets
+        if (spawnTimer % 50 === 0) {
+            enemies.push(new Enemy());
+        }
+
+        // Update & Render Player Bullets
+        ctx.fillStyle = '#00b4d8';
+        for (let i = bullets.length - 1; i >= 0; i--) {
+            let b = bullets[i];
+            b.y += b.vy;
+            ctx.fillRect(b.x - 2, b.y, 4, 14);
+            if (b.y < -10) bullets.splice(i, 1);
+        }
+
+        // Update & Render Enemy Bullets
+        ctx.fillStyle = '#ff4d6d';
+        for (let i = enemyBullets.length - 1; i >= 0; i--) {
+            let eb = enemyBullets[i];
+            eb.y += eb.vy;
+            ctx.fillRect(eb.x - 2, eb.y, 4, 10);
+
+            // Collision with Player Jet
+            if (Math.hypot(eb.x - player.x, eb.y - player.y) < 22) {
+                playerHp -= 10;
+                document.getElementById('hp').innerText = playerHp;
+                createExplosion(player.x, player.y, '#ff4d6d');
+                enemyBullets.splice(i, 1);
+                if (playerHp <= 0) gameOver();
+            } else if (eb.y > canvas.height + 10) {
+                enemyBullets.splice(i, 1);
+            }
+        }
+
+        // Update & Render Enemies
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            let e = enemies[i];
+            e.update();
+            e.draw();
+
+            // Collision with Player Laser
+            for (let j = bullets.length - 1; j >= 0; j--) {
+                let b = bullets[j];
+                if (Math.hypot(b.x - e.x, b.y - e.y) < 24) {
+                    score += 100;
+                    document.getElementById('score').innerText = score;
+                    createExplosion(e.x, e.y, '#ffb703');
+                    enemies.splice(i, 1);
+                    bullets.splice(j, 1);
+                    break;
+                }
+            }
+
+            if (e && e.y > canvas.height + 50) enemies.splice(i, 1);
+        }
+
+        // Render Particle Explosions
+        for (let i = particles.length - 1; i >= 0; i--) {
+            let p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life -= 0.04;
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = Math.max(0, p.life);
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+            if (p.life <= 0) particles.splice(i, 1);
+        }
+    }
+
+    function startGame() {
+        score = 0;
+        playerHp = 100;
+        bullets = [];
+        enemyBullets = [];
+        enemies = [];
+        particles = [];
+        player.x = canvas.width / 2;
+        player.y = canvas.height - 120;
+        player.vx = 0;
+        player.vy = 0;
+
+        document.getElementById('score').innerText = score;
+        document.getElementById('hp').innerText = playerHp;
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('game-over-screen').style.display = 'none';
+
+        isGameRunning = true;
+        animate();
+    }
+
+    function gameOver() {
+        isGameRunning = false;
+        document.getElementById('final-score').innerText = score;
+        document.getElementById('game-over-screen').style.display = 'flex';
+    }
+</script>
+</body>
+</html>
