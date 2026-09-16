@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Arcade Game Hub</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            background-color: #0b132b;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            color: #ffffff;
+        }
+
+        /* Mobile Screen Container */
+        #hub-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 480px;
+            max-height: 100vh;
+            background: linear-gradient(180deg, #1c2541 0%, #0b132b 100%);
+            box-shadow: 0 0 35px rgba(0, 180, 216, 0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (min-height: 600px) and (min-width: 480px) {
+            #hub-container {
+                height: 95vh;
+                border-radius: 20px;
+                border: 2px solid #3a506b;
+            }
+        }
+
+        /* Header */
+        .header {
+            padding: 15px 15px 10px 15px;
+            text-align: center;
+            background: rgba(11, 19, 43, 0.85);
+            border-bottom: 1px solid rgba(76, 201, 240, 0.2);
+            flex-shrink: 0;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #4cc9f0;
+            text-shadow: 0 0 10px rgba(76, 201, 240, 0.5);
+            font-weight: 900;
+            letter-spacing: 1px;
+        }
+
+        .header p {
+            font-size: 12px;
+            color: #a0aec0;
+            margin-top: 4px;
+        }
+
+        /* Game Grid Container */
+        .game-grid {
+            flex: 1;
+            padding: 12px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            align-content: start;
+        }
+
+        .game-grid::-webkit-scrollbar {
+            width: 4px;
+        }
+        .game-grid::-webkit-scrollbar-thumb {
+            background: #3a506b;
+            border-radius: 4px;
+        }
+
+        /* Game Cards */
+        .game-card {
+            background: #1c2541;
+            border: 1px solid #3a506b;
+            border-radius: 12px;
+            padding: 12px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+            color: white;
+            aspect-ratio: 1 / 0.85;
+        }
+
+        .game-card:active {
+            transform: scale(0.95);
+        }
+
+        .game-card:hover {
+            border-color: #4cc9f0;
+            box-shadow: 0 0 12px rgba(76, 201, 240, 0.3);
+        }
+
+        .game-icon {
+            font-size: 28px;
+            margin-bottom: 6px;
+        }
+
+        .game-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #e0e1dd;
+            text-align: center;
+        }
+
+        /* Highlight Action Game */
+        .action-card {
+            background: linear-gradient(135deg, #1c2541 0%, #0d3b66 100%);
+            border: 1px solid #4cc9f0;
+        }
+
+        .footer {
+            padding: 10px;
+            text-align: center;
+            font-size: 11px;
+            color: #5c6b73;
+            background: #0b132b;
+            flex-shrink: 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body>
+
+<div id="hub-container">
+    <div class="header">
+        <h1>ARCADE HUB</h1>
+        <p>සෙල්ලම් කිරීමට කැමති Game එක තෝරන්න</p>
+    </div>
+
+    <div class="game-grid">
+        <!-- New Air Strike Game -->
+        <a href="air strike.html" class="game-card action-card">
+            <div class="game-icon">✈️</div>
+            <div class="game-title">Air Strike</div>
+        </a>
+
+        <!-- Zip එකේ තිබූ අනිත් Games -->
+        <a href="carrom.html" class="game-card">
+            <div class="game-icon">🎯</div>
+            <div class="game-title">Carrom</div>
+        </a>
+
+        <a href="checkers.html" class="game-card">
+            <div class="game-icon">🏁</div>
+            <div class="game-title">Checkers</div>
+        </a>
+
+        <a href="xox.html" class="game-card">
+            <div class="game-icon">❌⭕</div>
+            <div class="game-title">XOX Game</div>
+        </a>
+
+        <a href="snake and ledders.html" class="game-card">
+            <div class="game-icon">🐍</div>
+            <div class="game-title">Snake & Ladders</div>
+        </a>
+
+        <a href="connect 4.html" class="game-card">
+            <div class="game-icon">🔴</div>
+            <div class="game-title">Connect 4</div>
+        </a>
+
+        <a href="omi.html" class="game-card">
+            <div class="game-icon">🎴</div>
+            <div class="game-title">Omi</div>
+        </a>
+
+        <a href="puzzle.html" class="game-card">
+            <div class="game-icon">🧩</div>
+            <div class="game-title">Puzzle</div>
+        </a>
+    </div>
+
+    <div class="footer">
+        Made by Notiya Real
+    </div>
+</div>
+
+</body>
+</html>
