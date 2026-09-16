@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NR Puzzle</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Pull-to-refresh සහ Screen Bounce නවත්වන CSS */
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            overscroll-behavior-y: none;
+            overscroll-behavior: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            background-color: #1a1a2e;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 10px;
+            position: relative;
+        }
+
+        /* Square Back Button Design */
+        .back-btn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            width: 42px;
+            height: 42px;
+            border-radius: 8px; /* කොටු හැඩය */
+            background-color: #16213e;
+            border: 2px solid #e94560;
+            color: #f9d56e;
+            font-size: 22px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            transition: transform 0.2s, background-color 0.2s, border-color 0.2s;
+            z-index: 50;
+        }
+
+        .back-btn:hover {
+            background-color: #0f3460;
+            border-color: #f9d56e;
+            transform: scale(1.05);
+        }
+
+        .back-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* NR Puzzle Styled Title */
+        .game-title {
+            color: #f9d56e;
+            font-size: 26px;
+            font-weight: 800;
+            text-align: center;
+            letter-spacing: 4px;
+            padding: 6px 30px;
+            border: 3px solid #e94560;
+            border-radius: 12px;
+            background: linear-gradient(145deg, #16213e, #0f3460);
+            box-shadow: 0 0 15px rgba(233, 69, 96, 0.5), inset 0 0 10px rgba(0,0,0,0.5);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+
+        /* Main Layout Box */
+        .game-wrapper {
+            display: flex;
+            flex-direction: row;
+            gap: 15px;
+            background-color: #16213e;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            align-items: center;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        /* Puzzle Board */
+        .puzzle-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 3px;
+            width: 440px;
+            height: 290px;
+            background-color: #0f3460;
+            border: 4px solid #e94560;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+            touch-action: none;
+        }
+
+        /* Individual Puzzle Piece */
+        .piece {
+            width: 100%;
+            height: 100%;
+            background-repeat: no-repeat;
+            background-size: 400% 300%;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: transform 0.1s ease, border-color 0.2s ease;
+            border-radius: 2px;
+            touch-action: none;
+        }
+
+        .piece:hover {
+            transform: scale(0.98);
+            border-color: #f9d56e;
+        }
+
+        /* Selected Piece Highlight */
+        .piece.selected {
+            border: 3px solid #f9d56e;
+            box-shadow: 0 0 15px #f9d56e;
+            transform: scale(0.95);
+            z-index: 10;
+        }
+
+        /* Side Panel */
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            width: 190px;
+            background-color: #0f3460;
+            padding: 12px;
+            border-radius: 10px;
+            border: 2px solid #53354a;
+        }
+
+        .preview-box {
+            width: 100%;
+            text-align: center;
+        }
+
+        .preview-title {
+            font-size: 12px;
+            color: #f9d56e;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+
+        .preview-img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border: 2px solid #e94560;
+            border-radius: 6px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+
+        /* Game Stats */
+        .stats-box {
+            width: 100%;
+            background-color: #16213e;
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .stat-item {
+            margin: 3px 0;
+            color: #e2e2e2;
+        }
+
+        .stat-value {
+            color: #f9d56e;
+            font-weight: bold;
+        }
+
+        /* Control Button */
+        .btn {
+            width: 100%;
+            padding: 9px;
+            font-size: 13px;
+            font-weight: bold;
+            color: white;
+            background-color: #e94560;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .btn:hover {
+            background-color: #ff5773;
+        }
+
+        .btn:active {
+            transform: translateY(2px);
+        }
+
+        /* Victory Overlay */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        .modal {
+            background-color: #16213e;
+            padding: 25px;
+            border-radius: 12px;
+            border: 3px solid #f9d56e;
+            text-align: center;
+            max-width: 320px;
+            box-shadow: 0 0 20px rgba(249, 213, 110, 0.5);
+        }
+
+        .modal h2 {
+            color: #f9d56e;
+            margin-bottom: 10px;
+        }
+
+        .modal p {
+            margin: 8px 0;
+            font-size: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .back-btn {
+                top: 10px;
+                left: 10px;
+                width: 38px;
+                height: 38px;
+                font-size: 20px;
+            }
+
+            .game-wrapper {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .puzzle-board {
+                width: 100%;
+                max-width: 320px;
+                height: 210px;
+            }
+
+            .side-panel {
+                width: 100%;
+                max-width: 320px;
+            }
+
+            .preview-img {
+                height: 90px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Square Top Left Back Button -->
+    <button class="back-btn" onclick="goBack()" title="ආපසු">←</button>
+
+    <div class="game-title">NR PUZZLE</div>
+
+    <div class="game-wrapper">
+        <div class="puzzle-board" id="board"></div>
+
+        <div class="side-panel">
+            <div class="preview-box">
+                <div class="preview-title">🎯 ඉලක්කගත රූපය</div>
+                <img id="preview" class="preview-img" src="" alt="Target Image Preview">
+            </div>
+
+            <div class="stats-box">
+                <div class="stat-item">⏱️ කාලය: <span id="timer" class="stat-value">00:00</span></div>
+                <div class="stat-item">🔄 චලනයන්: <span id="moves" class="stat-value">0</span></div>
+            </div>
+
+            <button class="btn" onclick="loadRandomGame()">🔄 වෙනත් රූපයක්</button>
+        </div>
+    </div>
+
+    <div class="overlay" id="victoryModal">
+        <div class="modal">
+            <h2>🎉 සුභ පැතුම්!</h2>
+            <p>ඔබ NR Puzzle එක සාර්ථකව විසඳුවා!</p>
+            <p>⏱️ ගතවූ කාලය: <span id="finalTime" class="stat-value">00:00</span></p>
+            <p>🔄 මුළු චලනයන්: <span id="finalMoves" class="stat-value">0</span></p>
+            <br>
+            <button class="btn" onclick="closeModalAndNewGame()">ඊළඟ පින්තූරය සෙල්ලම් කරන්න ➔</button>
+        </div>
+    </div>
+
+<script>
+    function goBack() {
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            window.location.href = '#';
+        }
+    }
+
+    // Prevent pull-to-refresh touchmove globally
+    document.body.addEventListener('touchmove', function(e) {
+        if (e.touches.length === 1) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSound(type) {
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'click') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.05);
+        } else if (type === 'swap') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(250, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(500, audioCtx.currentTime + 0.08);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.08);
+        } else if (type === 'win') {
+            const now = audioCtx.currentTime;
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(300, now);
+            osc.frequency.setValueAtTime(400, now + 0.1);
+            osc.frequency.setValueAtTime(500, now + 0.2);
+            osc.frequency.setValueAtTime(600, now + 0.3);
+            gain.gain.setValueAtTime(0.1, now);
+            osc.start();
+            osc.stop(now + 0.5);
+        }
+    }
+
+    const imagePool = [
+        'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1511497584788-8767611136f6?w=800&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=80'
+    ];
+
+    const COLS = 4;
+    const ROWS = 3;
+    const TOTAL_PIECES = COLS * ROWS;
+
+    let currentPieces = [];
+    let selectedIndex = null;
+    let currentImgUrl = '';
+    let moves = 0;
+    let timerInterval = null;
+    let secondsElapsed = 0;
+    let draggedIndex = null;
+
+    function getRandomImage() {
+        let available = imagePool.filter(url => url !== currentImgUrl);
+        if (available.length === 0) available = imagePool;
+        const randomIndex = Math.floor(Math.random() * available.length);
+        return available[randomIndex];
+    }
+
+    function loadRandomGame() {
+        currentImgUrl = getRandomImage();
+        document.getElementById('preview').src = currentImgUrl;
+        
+        const img = new Image();
+        img.src = currentImgUrl;
+        img.onload = () => {
+            resetStats();
+            setupPuzzle();
+        };
+    }
+
+    function resetStats() {
+        moves = 0;
+        document.getElementById('moves').innerText = moves;
+        selectedIndex = null;
+        
+        clearInterval(timerInterval);
+        secondsElapsed = 0;
+        document.getElementById('timer').innerText = '00:00';
+        timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function updateTimer() {
+        secondsElapsed++;
+        const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+        const secs = String(secondsElapsed % 60).padStart(2, '0');
+        document.getElementById('timer').innerText = `${mins}:${secs}`;
+    }
+
+    function setupPuzzle() {
+        currentPieces = Array.from({length: TOTAL_PIECES}, (_, i) => i);
+
+        do {
+            currentPieces.sort(() => Math.random() - 0.5);
+        } while (isSolved());
+
+        renderBoard();
+    }
+
+    function renderBoard() {
+        const board = document.getElementById('board');
+        board.innerHTML = '';
+
+        currentPieces.forEach((correctIndex, slotIndex) => {
+            const piece = document.createElement('div');
+            piece.classList.add('piece');
+            piece.draggable = true;
+
+            const col = correctIndex % COLS;
+            const row = Math.floor(correctIndex / COLS);
+            const posX = (col / (COLS - 1)) * 100;
+            const posY = (row / (ROWS - 1)) * 100;
+
+            piece.style.backgroundImage = `url('${currentImgUrl}')`;
+            piece.style.backgroundPosition = `${posX}% ${posY}%`;
+
+            if (selectedIndex === slotIndex) {
+                piece.classList.add('selected');
+            }
+
+            piece.addEventListener('click', () => handlePieceClick(slotIndex));
+
+            piece.addEventListener('dragstart', (e) => {
+                draggedIndex = slotIndex;
+                e.dataTransfer.setData('text/plain', slotIndex);
+            });
+
+            piece.addEventListener('dragover', (e) => e.preventDefault());
+
+            piece.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (draggedIndex !== null && draggedIndex !== slotIndex) {
+                    swapPieces(draggedIndex, slotIndex);
+                    draggedIndex = null;
+                }
+            });
+
+            board.appendChild(piece);
+        });
+    }
+
+    function handlePieceClick(index) {
+        if (selectedIndex === null) {
+            selectedIndex = index;
+            playSound('click');
+            renderBoard();
+        } else if (selectedIndex === index) {
+            selectedIndex = null;
+            playSound('click');
+            renderBoard();
+        } else {
+            swapPieces(selectedIndex, index);
+            selectedIndex = null;
+        }
+    }
+
+    function swapPieces(i, j) {
+        const temp = currentPieces[i];
+        currentPieces[i] = currentPieces[j];
+        currentPieces[j] = temp;
+
+        moves++;
+        document.getElementById('moves').innerText = moves;
+        playSound('swap');
+        renderBoard();
+
+        if (isSolved()) {
+            clearInterval(timerInterval);
+            setTimeout(showVictory, 300);
+        }
+    }
+
+    function isSolved() {
+        return currentPieces.every((pieceCorrectIdx, slotIdx) => pieceCorrectIdx === slotIdx);
+    }
+
+    function showVictory() {
+        playSound('win');
+        document.getElementById('finalTime').innerText = document.getElementById('timer').innerText;
+        document.getElementById('finalMoves').innerText = moves;
+        document.getElementById('victoryModal').style.display = 'flex';
+    }
+
+    function closeModalAndNewGame() {
+        document.getElementById('victoryModal').style.display = 'none';
+        loadRandomGame();
+    }
+
+    window.onload = () => {
+        loadRandomGame();
+    };
+</script>
+
+</body>
+</html>
