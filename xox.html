@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>NR XOX GAME</title>
+    <style>
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Mobile Viewport සහ Scroll / Pull-to-refresh වැළැක්වීම */
+        html, body {
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            overscroll-behavior-y: none;
+            overscroll-behavior: none;
+            touch-action: manipulation;
+            background: linear-gradient(135deg, #1e1e2e, #11111b); 
+            color: #fff; 
+        }
+
+        body { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: space-evenly; 
+            padding: 15px 10px;
+            position: relative;
+        }
+
+        /* XOX Theme Back Button */
+        .back-btn {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: #313244;
+            border: 2px solid #cba6f7;
+            color: #cba6f7;
+            font-size: 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            transition: transform 0.2s, background-color 0.2s, border-color 0.2s, color 0.2s;
+            z-index: 300;
+        }
+
+        .back-btn:hover {
+            background: #45475a;
+            border-color: #f5c2e7;
+            color: #f5c2e7;
+            transform: scale(1.05);
+        }
+
+        .back-btn:active {
+            transform: scale(0.95);
+        }
+
+        .title { 
+            font-size: 2rem; 
+            font-weight: 800;
+            background: linear-gradient(45deg, #f5c2e7, #cba6f7, #89b4fa); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            letter-spacing: 2px;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .scoreboard {
+            display: flex;
+            gap: 10px;
+            background: #313244;
+            padding: 10px 14px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+        .score-box {
+            padding: 0 6px;
+        }
+        .score-box .label { font-size: 0.7rem; color: #a6adc8; margin-bottom: 4px; }
+        .score-box .val { font-size: 1.1rem; font-weight: bold; color: #f5e0dc; }
+        
+        .status { 
+            font-size: 1.1rem; 
+            color: #f9e2af; 
+            font-weight: bold; 
+            height: 28px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .board { 
+            display: grid; 
+            grid-template-columns: repeat(3, min(85px, 26vw)); 
+            grid-template-rows: repeat(3, min(85px, 26vw)); 
+            gap: 12px; 
+        }
+
+        .cell { 
+            width: 100%; 
+            height: 100%; 
+            background-color: #313244; 
+            border-radius: 14px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 2.6rem; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: all 0.2s ease; 
+        }
+
+        .cell:hover { background-color: #45475a; }
+        .cell:active { transform: scale(0.95); }
+        .cell.x { color: #f38ba8; }
+        .cell.o { color: #89b4fa; }
+        
+        .btn-reset { 
+            padding: 10px 26px; 
+            font-size: 0.95rem; 
+            font-weight: bold; 
+            background: linear-gradient(45deg, #a6e3a1, #94e2d5); 
+            color: #11111b; 
+            border: none; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .btn-reset:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+    <!-- Back Button -->
+    <button class="back-btn" onclick="goBack()" title="ආපසු">←</button>
+
+    <h1 class="title">NR XOX GAME</h1>
+
+    <div class="scoreboard">
+        <div class="score-box">
+            <div class="label">තරඟ ගණන</div>
+            <div class="val" id="totalGames">0</div>
+        </div>
+        <div class="score-box">
+            <div class="label">ඔබ (X)</div>
+            <div class="val" id="xWins">0</div>
+        </div>
+        <div class="score-box">
+            <div class="label">Notiya (O)</div>
+            <div class="val" id="oWins">0</div>
+        </div>
+        <div class="score-box">
+            <div class="label">Draw</div>
+            <div class="val" id="draws">0</div>
+        </div>
+    </div>
+
+    <div class="status" id="status">ඔබේ වාරය</div>
+    
+    <div class="board" id="board">
+        <div class="cell" data-index="0"></div>
+        <div class="cell" data-index="1"></div>
+        <div class="cell" data-index="2"></div>
+        <div class="cell" data-index="3"></div>
+        <div class="cell" data-index="4"></div>
+        <div class="cell" data-index="5"></div>
+        <div class="cell" data-index="6"></div>
+        <div class="cell" data-index="7"></div>
+        <div class="cell" data-index="8"></div>
+    </div>
+
+    <button class="btn-reset" onclick="resetBoard()">නැවත පටන්ගන්න</button>
+
+    <script>
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // කඩදාසියක පැන්සලෙන් ලියන ශබ්දය
+        function playPaperDrawSound() {
+            try {
+                initAudio();
+                
+                let sampleRate = audioCtx.sampleRate;
+                let bufferSize = sampleRate * 0.14;
+                let buffer = audioCtx.createBuffer(1, bufferSize, sampleRate);
+                let data = buffer.getChannelData(0);
+
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                let noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+
+                let filter = audioCtx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(1800, audioCtx.currentTime);
+                filter.Q.setValueAtTime(2.5, audioCtx.currentTime);
+
+                let gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.28, audioCtx.currentTime + 0.03);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.14);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                noise.start();
+            } catch(e) {}
+        }
+
+        // ජයග්‍රහණයේදී ඇසෙන Clap / Cheer Sound එක
+        function playClapSound() {
+            try {
+                initAudio();
+                const now = audioCtx.currentTime;
+                const totalClaps = 16; 
+
+                for (let i = 0; i < totalClaps; i++) {
+                    let delay = Math.random() * 0.9;
+                    let sampleRate = audioCtx.sampleRate;
+                    let bufferSize = sampleRate * 0.07;
+                    let buffer = audioCtx.createBuffer(1, bufferSize, sampleRate);
+                    let data = buffer.getChannelData(0);
+
+                    for (let j = 0; j < bufferSize; j++) {
+                        data[j] = Math.random() * 2 - 1;
+                    }
+
+                    let noise = audioCtx.createBufferSource();
+                    noise.buffer = buffer;
+
+                    let filter = audioCtx.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    filter.frequency.setValueAtTime(1000 + Math.random() * 800, now + delay);
+                    filter.Q.setValueAtTime(1.8, now + delay);
+
+                    let gain = audioCtx.createGain();
+                    gain.gain.setValueAtTime(0, now + delay);
+                    gain.gain.linearRampToValueAtTime(0.22, now + delay + 0.005);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.07);
+
+                    noise.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(audioCtx.destination);
+
+                    noise.start(now + delay);
+                }
+            } catch(e) {}
+        }
+
+        function goBack() {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = '#';
+            }
+        }
+
+        // Pull-to-refresh වැළැක්වීම
+        document.body.addEventListener('touchmove', function(e) {
+            if (e.touches.length === 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        let board = ["", "", "", "", "", "", "", "", ""];
+        let currentPlayer = "X";
+        let gameActive = true;
+        
+        let totalGames = 0;
+        let xWins = 0;
+        let oWins = 0;
+        let draws = 0;
+
+        const statusDisplay = document.getElementById("status");
+        const totalGamesElem = document.getElementById("totalGames");
+        const xWinsElem = document.getElementById("xWins");
+        const oWinsElem = document.getElementById("oWins");
+        const drawsElem = document.getElementById("draws");
+
+        const winningConditions = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
+        ];
+
+        document.querySelectorAll(".cell").forEach(cell => {
+            cell.addEventListener("click", handleCellClick);
+        });
+
+        function handleCellClick(e) {
+            const clickedCell = e.target;
+            const index = parseInt(clickedCell.getAttribute("data-index"));
+
+            if (board[index] !== "" || !gameActive || currentPlayer !== "X") return;
+
+            makeMove(index, "X");
+
+            if (gameActive) {
+                currentPlayer = "O";
+                statusDisplay.innerText = "Notiya සිතමින් සිටී...";
+                setTimeout(aiTurn, 550);
+            }
+        }
+
+        function makeMove(index, player) {
+            board[index] = player;
+            const cell = document.querySelector(`.cell[data-index='${index}']`);
+            cell.innerText = player;
+            cell.classList.add(player.toLowerCase());
+
+            playPaperDrawSound();
+
+            checkResult(player);
+        }
+
+        function checkResult(player) {
+            let roundWon = false;
+            for (let i = 0; i < winningConditions.length; i++) {
+                const [a, b, c] = winningConditions[i];
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    roundWon = true;
+                    break;
+                }
+            }
+
+            if (roundWon) {
+                gameActive = false;
+                totalGames++;
+                if (player === "X") {
+                    xWins++;
+                    statusDisplay.innerText = "ඔබ දිනුවා! 🎉";
+                } else {
+                    oWins++;
+                    statusDisplay.innerText = "Notiya දිනුවා! 🤖";
+                }
+                playClapSound(); // Win වූ විට Clap Sound එක ක්‍රියාත්මක වේ
+                updateScoreboard();
+                return;
+            }
+
+            if (!board.includes("")) {
+                gameActive = false;
+                totalGames++;
+                draws++;
+                statusDisplay.innerText = "ජය පරාජයෙන් තොරයි! 🤝";
+                updateScoreboard();
+                return;
+            }
+        }
+
+        function aiTurn() {
+            if (!gameActive) return;
+
+            const bestMove = getBestMove();
+            makeMove(bestMove, "O");
+
+            if (gameActive) {
+                currentPlayer = "X";
+                statusDisplay.innerText = "ඔබේ වාරය";
+            }
+        }
+
+        function getBestMove() {
+            // 1. Check if AI can win
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === "") {
+                    board[i] = "O";
+                    if (checkWin("O")) {
+                        board[i] = "";
+                        return i;
+                    }
+                    board[i] = "";
+                }
+            }
+
+            // 2. Block Player from winning
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === "") {
+                    board[i] = "X";
+                    if (checkWin("X")) {
+                        board[i] = "";
+                        return i;
+                    }
+                    board[i] = "";
+                }
+            }
+
+            // 3. Take center if empty
+            if (board[4] === "") return 4;
+
+            // 4. Random move
+            const emptyIndices = board.map((val, idx) => val === "" ? idx : null).filter(val => val !== null);
+            return emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+        }
+
+        function checkWin(player) {
+            return winningConditions.some(condition => {
+                return condition.every(index => board[index] === player);
+            });
+        }
+
+        function updateScoreboard() {
+            totalGamesElem.innerText = totalGames;
+            xWinsElem.innerText = xWins;
+            oWinsElem.innerText = oWins;
+            drawsElem.innerText = draws;
+        }
+
+        function resetBoard() {
+            initAudio();
+            board = ["", "", "", "", "", "", "", "", ""];
+            currentPlayer = "X";
+            gameActive = true;
+            statusDisplay.innerText = "ඔබේ වාරය";
+            document.querySelectorAll(".cell").forEach(cell => {
+                cell.innerText = "";
+                cell.classList.remove("x", "o");
+            });
+        }
+    </script>
+</body>
+</html>
