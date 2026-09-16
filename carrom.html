@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Carrom Game - Notiya</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+
+        body {
+            background: #0d0e15;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px;
+            overflow: hidden;
+        }
+
+        .header {
+            text-align: center;
+            margin-top: 2px;
+        }
+
+        .title {
+            font-size: 1.3rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #f39c12, #f1c40f, #e67e22);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .status-bar {
+            width: 100%;
+            max-width: 450px;
+            background: #1a1c23;
+            border-radius: 8px;
+            padding: 6px 10px;
+            margin: 4px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #2a2d3d;
+            font-size: 0.85rem;
+        }
+
+        .turn-indicator {
+            font-weight: bold;
+            padding: 4px 12px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .turn-user { background: #27ae60; color: #fff; }
+        .turn-ai { background: #e74c3c; color: #fff; }
+
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 450px;
+            background: #161822;
+            padding: 6px 10px;
+            border-radius: 10px;
+            border: 1px solid #282b3d;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        .score-box { text-align: center; }
+        .score-title { font-size: 0.65rem; color: #8e95b0; text-transform: uppercase; }
+        .score-val { font-size: 1.1rem; font-weight: bold; }
+
+        .canvas-container {
+            width: 100%;
+            max-width: 450px;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            background: #000;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8);
+        }
+
+        .controls {
+            width: 100%;
+            max-width: 450px;
+            background: #161822;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid #282b3d;
+            margin-top: 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        label { font-size: 0.8rem; color: #ddd; font-weight: 600; white-space: nowrap; }
+        input[type=range] { width: 100%; accent-color: #f39c12; height: 25px; }
+
+        .btn {
+            background: linear-gradient(135deg, #e67e22, #d35400);
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 3px 8px rgba(230, 126, 34, 0.3);
+        }
+
+        .msg-banner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.88);
+            border: 2px solid #f39c12;
+            color: #f1c40f;
+            padding: 12px 20px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 0.95rem;
+            font-weight: bold;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 10;
+            width: 85%;
+            box-shadow: 0 0 20px rgba(243, 156, 18, 0.4);
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            font-size: 0.68rem;
+            color: #aaa;
+        }
+
+        .legend-item { display: flex; align-items: center; gap: 4px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1 class="title">🎯 CARROM GAME - NOTIYA</h1>
+    </div>
+
+    <div class="status-bar">
+        <div id="turnBadge" class="turn-indicator turn-user">
+            <span id="turnDot" style="display:inline-block; width:10px; height:10px; background:#fff; border-radius:50%;"></span>
+            <span id="turnText">ඔබගේ වාරය (White)</span>
+        </div>
+    </div>
+
+    <div class="scoreboard">
+        <div class="score-box">
+            <div class="score-title">ඔබ (White)</div>
+            <div class="score-val" id="userVal" style="color: #ffffff;">0/9</div>
+        </div>
+        <div class="score-box">
+            <div class="score-title">Notiya (Black)</div>
+            <div class="score-val" id="aiVal" style="color: #a0a0a0;">0/9</div>
+        </div>
+        <div class="score-box">
+            <div class="score-title">Red Queen</div>
+            <div class="score-val" id="queenVal" style="color: #e74c3c;">❌</div>
+        </div>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="carromCanvas" width="580" height="580"></canvas>
+        <div id="msgBanner" class="msg-banner">ලකුණු ලබා ගැනීම!</div>
+    </div>
+
+    <div class="controls">
+        <div class="control-row">
+            <label for="strikerPos">Striker ස්ථානය (Baseline):</label>
+            <input type="range" id="strikerPos" min="140" max="440" value="290">
+        </div>
+        <div class="control-row" style="justify-content: space-between;">
+            <div class="legend">
+                <div class="legend-item"><div class="dot" style="background:#f1c40f;"></div> Striker Path</div>
+                <div class="legend-item"><div class="dot" style="background:#e74c3c;"></div> Piece Path</div>
+                <div class="legend-item"><div class="dot" style="background:#3498db;"></div> Deflection</div>
+            </div>
+            <button class="btn" id="resetBtn">🔄 Reset</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('carromCanvas');
+        const ctx = canvas.getContext('2d');
+        const strikerPosSlider = document.getElementById('strikerPos');
+        const resetBtn = document.getElementById('resetBtn');
+
+        const turnBadge = document.getElementById('turnBadge');
+        const turnDot = document.getElementById('turnDot');
+        const turnText = document.getElementById('turnText');
+
+        const userValEl = document.getElementById('userVal');
+        const aiValEl = document.getElementById('aiVal');
+        const queenValEl = document.getElementById('queenVal');
+        const msgBanner = document.getElementById('msgBanner');
+
+        // Sound System
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type, volume = 1) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'hit') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(180 + Math.random() * 80, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.04);
+                    gain.gain.setValueAtTime(Math.min(volume, 1) * 0.4, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.04);
+                } else if (type === 'pocket') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(320, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.18);
+                    gain.gain.setValueAtTime(0.6, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.18);
+                }
+            } catch(e) {}
+        }
+
+        // Board Constants
+        const BOARD_SIZE = 580;
+        const CUSHION = 42;
+        const PLAY_AREA_MIN = CUSHION;
+        const PLAY_AREA_MAX = BOARD_SIZE - CUSHION;
+        const POCKET_RADIUS = 24;
+        const FRICTION = 0.982;
+        const RESTITUTION = 0.88;
+
+        const USER_BASELINE_Y = 442;
+        const AI_BASELINE_Y = 138;
+
+        const POCKETS = [
+            { x: CUSHION + 12, y: CUSHION + 12 },
+            { x: BOARD_SIZE - CUSHION - 12, y: CUSHION + 12 },
+            { x: CUSHION + 12, y: BOARD_SIZE - CUSHION - 12 },
+            { x: BOARD_SIZE - CUSHION - 12, y: BOARD_SIZE - CUSHION - 12 }
+        ];
+
+        let currentTurn = 'user'; 
+        let userPottedCount = 0;
+        let aiPottedCount = 0;
+
+        let queenState = 'board'; 
+        let queenPottedBy = null; 
+
+        let pieces = [];
+        let striker = null;
+        let isAiming = false;
+        let isPlacing = false; 
+        let isMoving = false;
+        let aiThinking = false;
+        let touchX = 0, touchY = 0;
+
+        let pottedInCurrentShot = [];
+        let bannerTimeout = null;
+
+        function showBanner(text, duration = 2500) {
+            msgBanner.innerText = text;
+            msgBanner.style.opacity = '1';
+            if (bannerTimeout) clearTimeout(bannerTimeout);
+            bannerTimeout = setTimeout(() => {
+                msgBanner.style.opacity = '0';
+            }, duration);
+        }
+
+        class Piece {
+            constructor(x, y, radius, color, type, mass = 1.0) {
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = 0;
+                this.radius = radius;
+                this.color = color;
+                this.type = type; 
+                this.mass = mass;
+                this.isPotted = false;
+            }
+
+            draw() {
+                if (this.isPotted) return;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                
+                let grad = ctx.createRadialGradient(
+                    this.x - this.radius*0.3, this.y - this.radius*0.3, this.radius*0.1,
+                    this.x, this.y, this.radius
+                );
+
+                if (this.type === 'white') {
+                    grad.addColorStop(0, '#ffffff');
+                    grad.addColorStop(0.7, '#f0e6d2');
+                    grad.addColorStop(1, '#c8b496');
+                } else if (this.type === 'black') {
+                    grad.addColorStop(0, '#555566');
+                    grad.addColorStop(0.7, '#22222e');
+                    grad.addColorStop(1, '#0a0a0f');
+                } else if (this.type === 'queen') {
+                    grad.addColorStop(0, '#ff7675');
+                    grad.addColorStop(0.7, '#d63031');
+                    grad.addColorStop(1, '#810000');
+                } else if (this.type === 'striker') {
+                    grad.addColorStop(0, '#74b9ff');
+                    grad.addColorStop(0.5, '#0984e3');
+                    grad.addColorStop(1, '#024b86');
+                }
+
+                ctx.fillStyle = grad;
+                ctx.fill();
+
+                ctx.lineWidth = 1.5;
+                ctx.strokeStyle = (this.type === 'striker') ? '#00cec9' : 'rgba(0,0,0,0.25)';
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius * 0.4, 0, Math.PI * 2);
+                ctx.strokeStyle = (this.type === 'black') ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)';
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        }
+
+        function initGame() {
+            currentTurn = 'user';
+            userPottedCount = 0;
+            aiPottedCount = 0;
+            queenState = 'board';
+            queenPottedBy = null;
+
+            isMoving = false;
+            isAiming = false;
+            isPlacing = false;
+            aiThinking = false;
+            pottedInCurrentShot = [];
+
+            updateUI();
+
+            pieces = [];
+            const cx = BOARD_SIZE / 2;
+            const cy = BOARD_SIZE / 2;
+            const r = 11.5;
+
+            // Queen
+            pieces.push(new Piece(cx, cy, r, '#d63031', 'queen', 1.0));
+
+            // Ring 1
+            const ring1Dist = r * 2.05;
+            for (let i = 0; i < 6; i++) {
+                const angle = (i * Math.PI / 3) + Math.PI/6;
+                const type = (i % 2 === 0) ? 'white' : 'black';
+                pieces.push(new Piece(cx + Math.cos(angle)*ring1Dist, cy + Math.sin(angle)*ring1Dist, r, '', type, 1.0));
+            }
+
+            // Ring 2
+            const ring2Dist = r * 4.1;
+            for (let i = 0; i < 12; i++) {
+                const angle = (i * Math.PI / 6);
+                const type = (i % 2 === 0) ? 'black' : 'white';
+                pieces.push(new Piece(cx + Math.cos(angle)*ring2Dist, cy + Math.sin(angle)*ring2Dist, r, '', type, 1.0));
+            }
+
+            // Striker (Mass = 1.6)
+            strikerPosSlider.value = 290;
+            striker = new Piece(290, USER_BASELINE_Y, 15, '', 'striker', 1.6);
+            pieces.push(striker);
+
+            showBanner("🎮 ක්‍රීඩාව ආරම්භ විය! ඔබේ වාරය.", 2000);
+        }
+
+        function updateUI() {
+            userValEl.innerText = `${userPottedCount}/9`;
+            aiValEl.innerText = `${aiPottedCount}/9`;
+
+            if (queenState === 'covered') {
+                queenValEl.innerText = (queenPottedBy === 'user') ? '✅ ඔබගේ' : '🤖 Notiyaගේ';
+            } else if (queenState === 'potted_uncovered') {
+                queenValEl.innerText = '⏳ Cover?';
+            } else {
+                queenValEl.innerText = '❌';
+            }
+
+            if (currentTurn === 'user') {
+                turnBadge.className = 'turn-indicator turn-user';
+                turnDot.style.background = '#fff';
+                turnText.innerText = 'ඔබගේ වාරය (White)';
+                strikerPosSlider.disabled = false;
+            } else {
+                turnBadge.className = 'turn-indicator turn-ai';
+                turnDot.style.background = '#e74c3c';
+                turnText.innerText = 'Notiya ගේ වාරය (Black)';
+                strikerPosSlider.disabled = true;
+            }
+        }
+
+        function drawBoard() {
+            ctx.clearRect(0, 0, BOARD_SIZE, BOARD_SIZE);
+
+            // Wood Frame
+            let woodGrad = ctx.createLinearGradient(0, 0, BOARD_SIZE, BOARD_SIZE);
+            woodGrad.addColorStop(0, '#5c2d12');
+            woodGrad.addColorStop(0.5, '#8b4513');
+            woodGrad.addColorStop(1, '#3a1a08');
+            ctx.fillStyle = woodGrad;
+            ctx.fillRect(0, 0, BOARD_SIZE, BOARD_SIZE);
+
+            // Playing Surface
+            let boardGrad = ctx.createRadialGradient(BOARD_SIZE/2, BOARD_SIZE/2, 50, BOARD_SIZE/2, BOARD_SIZE/2, 350);
+            boardGrad.addColorStop(0, '#f2dfbc');
+            boardGrad.addColorStop(1, '#d8be91');
+            ctx.fillStyle = boardGrad;
+            ctx.fillRect(CUSHION, CUSHION, BOARD_SIZE - CUSHION*2, BOARD_SIZE - CUSHION*2);
+
+            ctx.strokeStyle = '#2d1406';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(CUSHION, CUSHION, BOARD_SIZE - CUSHION*2, BOARD_SIZE - CUSHION*2);
+
+            // Pockets
+            POCKETS.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, POCKET_RADIUS, 0, Math.PI * 2);
+                let pGrad = ctx.createRadialGradient(p.x, p.y, 5, p.x, p.y, POCKET_RADIUS);
+                pGrad.addColorStop(0, '#111');
+                pGrad.addColorStop(1, '#333');
+                ctx.fillStyle = pGrad;
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#8b4513';
+                ctx.stroke();
+            });
+
+            // Markings
+            const cx = BOARD_SIZE / 2;
+            const cy = BOARD_SIZE / 2;
+            ctx.strokeStyle = '#b33939';
+            ctx.lineWidth = 1.5;
+
+            ctx.beginPath();
+            ctx.arc(cx, cy, 40, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+            ctx.fillStyle = '#b33939';
+            ctx.fill();
+
+            // Bottom Baseline
+            ctx.beginPath();
+            ctx.rect(140, 434, 300, 16);
+            ctx.strokeStyle = '#b33939';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            [140, 440].forEach(x => {
+                ctx.beginPath();
+                ctx.arc(x, 442, 10, 0, Math.PI * 2);
+                ctx.strokeStyle = '#b33939';
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(x, 442, 5, 0, Math.PI * 2);
+                ctx.fillStyle = '#b33939';
+                ctx.fill();
+            });
+
+            // Top Baseline
+            ctx.beginPath();
+            ctx.rect(140, 130, 300, 16);
+            ctx.strokeStyle = '#b33939';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            [140, 440].forEach(x => {
+                ctx.beginPath();
+                ctx.arc(x, 138, 10, 0, Math.PI * 2);
+                ctx.strokeStyle = '#b33939';
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(x, 138, 5, 0, Math.PI * 2);
+                ctx.fillStyle = '#b33939';
+                ctx.fill();
+            });
+
+            // Left & Right Baselines
+            ctx.beginPath(); ctx.rect(130, 140, 16, 300); ctx.stroke();
+            ctx.beginPath(); ctx.rect(434, 140, 16, 300); ctx.stroke();
+        }
+
+        // Raycasting System
+        function traceRay(startX, startY, dirX, dirY, ignorePiece = null) {
+            let len = Math.hypot(dirX, dirY);
+            if (len === 0) return null;
+            let ux = dirX / len;
+            let uy = dirY / len;
+
+            let minD = Infinity;
+            let hitInfo = null;
+
+            const minX = PLAY_AREA_MIN + striker.radius;
+            const maxX = PLAY_AREA_MAX - striker.radius;
+            const minY = PLAY_AREA_MIN + striker.radius;
+            const maxY = PLAY_AREA_MAX - striker.radius;
+
+            // Check Cushion Walls
+            if (ux > 0.0001) {
+                let d = (maxX - startX) / ux;
+                if (d > 0.01 && d < minD) {
+                    minD = d;
+                    hitInfo = { type: 'wall', wall: 'right', x: maxX, y: startY + uy * d };
+                }
+            } else if (ux < -0.0001) {
+                let d = (minX - startX) / ux;
+                if (d > 0.01 && d < minD) {
+                    minD = d;
+                    hitInfo = { type: 'wall', wall: 'left', x: minX, y: startY + uy * d };
+                }
+            }
+
+            if (uy > 0.0001) {
+                let d = (maxY - startY) / uy;
+                if (d > 0.01 && d < minD) {
+                    minD = d;
+                    hitInfo = { type: 'wall', wall: 'bottom', x: startX + ux * d, y: maxY };
+                }
+            } else if (uy < -0.0001) {
+                let d = (minY - startY) / uy;
+                if (d > 0.01 && d < minD) {
+                    minD = d;
+                    hitInfo = { type: 'wall', wall: 'top', x: startX + ux * d, y: minY };
+                }
+            }
+
+            // Check Piece Collisions
+            pieces.forEach(p => {
+                if (p.isPotted || p.type === 'striker' || p === ignorePiece) return;
+
+                let Vx = p.x - startX;
+                let Vy = p.y - startY;
+                let R = striker.radius + p.radius;
+
+                let proj = Vx * ux + Vy * uy;
+                if (proj > 0) {
+                    let perpSq = (Vx * Vx + Vy * Vy) - (proj * proj);
+                    if (perpSq <= R * R) {
+                        let disc = Math.sqrt(Math.max(0, R * R - perpSq));
+                        let d = proj - disc;
+                        if (d > 0.01 && d < minD) {
+                            minD = d;
+                            hitInfo = {
+                                type: 'piece',
+                                piece: p,
+                                x: startX + ux * d,
+                                y: startY + uy * d
+                            };
+                        }
+                    }
+                }
+            });
+
+            if (hitInfo) {
+                hitInfo.dist = minD;
+                hitInfo.ux = ux;
+                hitInfo.uy = uy;
+            }
+            return hitInfo;
+        }
+
+        // Pull-back (Slingshot) Aiming Vector Calculation
+        function getAimVector() {
+            // Shot direction is FROM touch position TO striker position
+            let dirX = striker.x - touchX;
+            let dirY = striker.y - touchY;
+            return { dirX, dirY, dist: Math.hypot(dirX, dirY) };
+        }
+
+        function drawAimControls() {
+            if (!isAiming && !aiThinking) return;
+
+            let vec = getAimVector();
+            if (vec.dist < 5) return;
+
+            let power = Math.min(vec.dist, 120);
+            let ux = vec.dirX / vec.dist;
+            let uy = vec.dirY / vec.dist;
+
+            // Render Cue Stick Behind Striker (Extending towards Touch point)
+            ctx.save();
+            ctx.translate(striker.x, striker.y);
+            let shotAngle = Math.atan2(uy, ux);
+            ctx.rotate(shotAngle); // +X points towards shot target, -X points towards Stick handle
+
+            let cueGap = striker.radius + 6 + (power * 0.25); // Stick pulls back as power increases
+            let cueTipX = -cueGap;
+            let cueLength = 160;
+
+            let cueGrad = ctx.createLinearGradient(cueTipX - cueLength, 0, cueTipX, 0);
+            cueGrad.addColorStop(0, '#2c3e50');
+            cueGrad.addColorStop(0.8, '#e67e22');
+            cueGrad.addColorStop(1, '#f1c40f');
+            ctx.fillStyle = cueGrad;
+
+            ctx.beginPath();
+            ctx.moveTo(cueTipX, -3);
+            ctx.lineTo(cueTipX - cueLength, -6);
+            ctx.lineTo(cueTipX - cueLength, 6);
+            ctx.lineTo(cueTipX, 3);
+            ctx.closePath();
+            ctx.fill();
+
+            // Tip indicator
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(cueTipX - 2, -3, 2, 6);
+            ctx.restore();
+
+            // Trace Trajectory Line Forward (In direction ux, uy)
+            let hit1 = traceRay(striker.x, striker.y, ux, uy);
+            if (!hit1) return;
+
+            if (hit1.type === 'piece') {
+                drawPathLine(striker.x, striker.y, hit1.x, hit1.y);
+                drawHitCollision(hit1.x, hit1.y, hit1.piece, ux, uy, power * 0.18);
+            } 
+            else if (hit1.type === 'wall') {
+                drawPathLine(striker.x, striker.y, hit1.x, hit1.y);
+
+                let rUx = (hit1.wall === 'left' || hit1.wall === 'right') ? -ux : ux;
+                let rUy = (hit1.wall === 'top' || hit1.wall === 'bottom') ? -uy : uy;
+
+                let hit2 = traceRay(hit1.x, hit1.y, rUx, rUy);
+                if (hit2) {
+                    if (hit2.type === 'piece') {
+                        drawPathLine(hit1.x, hit1.y, hit2.x, hit2.y);
+                        drawHitCollision(hit2.x, hit2.y, hit2.piece, rUx, rUy, power * 0.18);
+                    } else if (hit2.type === 'wall') {
+                        drawPathLine(hit1.x, hit1.y, hit2.x, hit2.y);
+                    }
+                }
+            }
+        }
+
+        function drawPathLine(x1, y1, x2, y2) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.setLineDash([6, 4]);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = '#f1c40f';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawArrowHead(x, y, angle, color) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-10, -5);
+            ctx.lineTo(-10, 5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawHitCollision(gx, gy, hitPiece, ux, uy, initialSpeed) {
+            ctx.save();
+
+            // Ghost Striker
+            ctx.beginPath();
+            ctx.arc(gx, gy, striker.radius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.8;
+            ctx.setLineDash([3, 3]);
+            ctx.stroke();
+
+            const m1 = striker.mass; 
+            const m2 = hitPiece.mass; 
+            const e = RESTITUTION; 
+
+            let vx = ux * initialSpeed;
+            let vy = uy * initialSpeed;
+
+            let nx = hitPiece.x - gx;
+            let ny = hitPiece.y - gy;
+            let nLen = Math.hypot(nx, ny);
+
+            if (nLen > 0) {
+                nx /= nLen; 
+                ny /= nLen;
+
+                let vn = vx * nx + vy * ny;
+
+                if (vn > 0) {
+                    let J = ((1 + e) * vn) / (m1 + m2);
+
+                    let targetVx = J * m1 * nx;
+                    let targetVy = J * m1 * ny;
+                    let targetSpeed = Math.hypot(targetVx, targetVy);
+
+                    let strikerVx = vx - J * m2 * nx;
+                    let strikerVy = vy - J * m2 * ny;
+                    let strikerSpeed = Math.hypot(strikerVx, strikerVy);
+
+                    // 1. Target Piece Line (Red Line)
+                    if (targetSpeed > 0.01) {
+                        let lineLen = Math.min(targetSpeed * 12, 140);
+                        let targetX = hitPiece.x + nx * lineLen;
+                        let targetY = hitPiece.y + ny * lineLen;
+
+                        ctx.beginPath();
+                        ctx.setLineDash([5, 3]);
+                        ctx.moveTo(hitPiece.x, hitPiece.y);
+                        ctx.lineTo(targetX, targetY);
+                        ctx.strokeStyle = '#e74c3c';
+                        ctx.lineWidth = 2.5;
+                        ctx.stroke();
+
+                        drawArrowHead(targetX, targetY, Math.atan2(ny, nx), '#e74c3c');
+                    }
+
+                    // 2. Striker Bounce Line (Blue Line)
+                    if (strikerSpeed > 0.01) {
+                        let sUx = strikerVx / strikerSpeed;
+                        let sUy = strikerVy / strikerSpeed;
+                        let lineLen = Math.min(strikerSpeed * 10, 90);
+                        let bounceX = gx + sUx * lineLen;
+                        let bounceY = gy + sUy * lineLen;
+
+                        ctx.beginPath();
+                        ctx.setLineDash([5, 3]);
+                        ctx.moveTo(gx, gy);
+                        ctx.lineTo(bounceX, bounceY);
+                        ctx.strokeStyle = '#3498db';
+                        ctx.lineWidth = 2.5;
+                        ctx.stroke();
+
+                        drawArrowHead(bounceX, bounceY, Math.atan2(sUy, sUx), '#3498db');
+                    }
+                }
+            }
+            ctx.restore();
+        }
+
+        // Physics Update Engine (10 Sub-steps)
+        function updatePhysics() {
+            let stillMoving = false;
+            const SUB_STEPS = 10;
+            const dt = 1 / SUB_STEPS;
+
+            for (let step = 0; step < SUB_STEPS; step++) {
+                pieces.forEach(p => {
+                    if (p.isPotted) return;
+                    p.x += p.vx * dt;
+                    p.y += p.vy * dt;
+                    p.vx *= Math.pow(FRICTION, dt);
+                    p.vy *= Math.pow(FRICTION, dt);
+
+                    if (Math.hypot(p.vx, p.vy) > 0.05) stillMoving = true;
+                    else { p.vx = 0; p.vy = 0; }
+                });
+
+                pieces.forEach(p => {
+                    if (p.isPotted) return;
+                    const minX = PLAY_AREA_MIN + p.radius;
+                    const maxX = PLAY_AREA_MAX - p.radius;
+                    const minY = PLAY_AREA_MIN + p.radius;
+                    const maxY = PLAY_AREA_MAX - p.radius;
+
+                    let bounced = false;
+                    if (p.x < minX) { p.x = minX; p.vx = -p.vx * RESTITUTION; bounced = true; }
+                    if (p.x > maxX) { p.x = maxX; p.vx = -p.vx * RESTITUTION; bounced = true; }
+                    if (p.y < minY) { p.y = minY; p.vy = -p.vy * RESTITUTION; bounced = true; }
+                    if (p.y > maxY) { p.y = maxY; p.vy = -p.vy * RESTITUTION; bounced = true; }
+
+                    if (bounced) playSound('hit', Math.hypot(p.vx, p.vy) / 8);
+                });
+
+                for (let i = 0; i < pieces.length; i++) {
+                    for (let j = i + 1; j < pieces.length; j++) {
+                        const p1 = pieces[i];
+                        const p2 = pieces[j];
+                        if (p1.isPotted || p2.isPotted) continue;
+
+                        const dx = p2.x - p1.x;
+                        const dy = p2.y - p1.y;
+                        const dist = Math.hypot(dx, dy);
+                        const minDist = p1.radius + p2.radius;
+
+                        if (dist < minDist && dist > 0) {
+                            const nx = dx / dist;
+                            const ny = dy / dist;
+
+                            const overlap = minDist - dist;
+                            const totalM = p1.mass + p2.mass;
+                            p1.x -= nx * overlap * (p2.mass / totalM);
+                            p1.y -= ny * overlap * (p2.mass / totalM);
+                            p2.x += nx * overlap * (p1.mass / totalM);
+                            p2.y += ny * overlap * (p1.mass / totalM);
+
+                            const kx = p1.vx - p2.vx;
+                            const ky = p1.vy - p2.vy;
+                            const vn = kx * nx + ky * ny;
+
+                            if (vn > 0) {
+                                const J = ((1 + RESTITUTION) * vn) / totalM;
+
+                                p1.vx -= J * p2.mass * nx;
+                                p1.vy -= J * p2.mass * ny;
+                                p2.vx += J * p1.mass * nx;
+                                p2.vy += J * p1.mass * ny;
+
+                                playSound('hit', Math.abs(J) / 4);
+                            }
+                        }
+                    }
+                }
+
+                pieces.forEach(p => {
+                    if (p.isPotted) return;
+                    POCKETS.forEach(pkt => {
+                        if (Math.hypot(p.x - pkt.x, p.y - pkt.y) < POCKET_RADIUS * 0.82) {
+                            p.isPotted = true;
+                            p.vx = 0; p.vy = 0;
+                            pottedInCurrentShot.push(p);
+                            playSound('pocket');
+                        }
+                    });
+                });
+            }
+
+            if (isMoving && !stillMoving) {
+                isMoving = false;
+                handleShotOutcome();
+            }
+        }
+
+        function returnPiecesToBoard(type, count) {
+            let countReturned = 0;
+            const cx = BOARD_SIZE / 2;
+            const cy = BOARD_SIZE / 2;
+
+            pieces.forEach(p => {
+                if (p.type === type && p.isPotted && countReturned < count) {
+                    p.isPotted = false;
+                    p.vx = 0; p.vy = 0;
+                    let angle = Math.random() * Math.PI * 2;
+                    let dist = 20 + Math.random() * 25;
+                    p.x = cx + Math.cos(angle) * dist;
+                    p.y = cy + Math.sin(angle) * dist;
+                    countReturned++;
+                }
+            });
+            return countReturned;
+        }
+
+        function handleShotOutcome() {
+            let ownType = (currentTurn === 'user') ? 'white' : 'black';
+            let oppType = (currentTurn === 'user') ? 'black' : 'white';
+
+            let strikerPotted = pottedInCurrentShot.some(p => p.type === 'striker');
+            let ownPotted = pottedInCurrentShot.filter(p => p.type === ownType);
+            let oppPotted = pottedInCurrentShot.filter(p => p.type === oppType);
+            let redPotted = pottedInCurrentShot.some(p => p.type === 'queen');
+
+            let retainTurn = false;
+
+            let totalOwnPotted = pieces.filter(p => p.type === ownType && p.isPotted).length;
+            let totalOppPotted = pieces.filter(p => p.type === oppType && p.isPotted).length;
+
+            if (currentTurn === 'user') {
+                userPottedCount = totalOwnPotted;
+                aiPottedCount = totalOppPotted;
+            } else {
+                aiPottedCount = totalOwnPotted;
+                userPottedCount = totalOppPotted;
+            }
+
+            if (totalOppPotted >= 9 && queenState !== 'covered') {
+                showBanner(`⚠️ දඬුවම! Red එක පොට් කිරීමට පෙර විරුද්ධවාදියාගේ අවසාන ඉත්තා පොට් කරන ලදී!`, 3500);
+                returnPiecesToBoard(oppType, 1);
+                returnPiecesToBoard(ownType, 2);
+                retainTurn = false;
+            } 
+            else if (totalOwnPotted >= 9 && queenState !== 'covered') {
+                showBanner(`⚠️ දඬුවම! Red එක පොට් කිරීමට පෙර සියලුම ඉත්තන් පොට් විය!`, 3500);
+                returnPiecesToBoard(ownType, 2);
+                retainTurn = false;
+            }
+            else {
+                if (redPotted) {
+                    if (queenState === 'board') {
+                        if (ownPotted.length > 0) {
+                            queenState = 'covered';
+                            queenPottedBy = currentTurn;
+                            showBanner(`🎉 Red (Queen) සහ Cover ඉත්තා සාර්ථකයි!`, 2500);
+                            retainTurn = true;
+                        } else {
+                            queenState = 'potted_uncovered';
+                            queenPottedBy = currentTurn;
+                            showBanner(`🎯 Red (Queen) පොට් විය! ඊළඟ පහරින් Cover කරන්න.`, 2500);
+                            retainTurn = true;
+                        }
+                    }
+                } else if (queenState === 'potted_uncovered') {
+                    if (queenPottedBy === currentTurn) {
+                        if (ownPotted.length > 0) {
+                            queenState = 'covered';
+                            showBanner(`✅ Red (Queen) සාර්ථකව Cover විය!`, 2500);
+                            retainTurn = true;
+                        } else {
+                            queenState = 'board';
+                            queenPottedBy = null;
+                            returnPiecesToBoard('queen', 1);
+                            showBanner(`❌ Cover කිරීමට අපොහොසත් විය! Red නැවත බෝඩ් එකට.`, 2500);
+                            retainTurn = false;
+                        }
+                    }
+                } else {
+                    if (ownPotted.length > 0 && !strikerPotted) {
+                        retainTurn = true;
+                        showBanner(`👍 සාර්ථක පහරක්! තවත් වාරයක්.`, 1500);
+                    }
+                }
+            }
+
+            if (strikerPotted) {
+                showBanner(`⚠️ Foul! Striker එක Pocket විය.`, 2000);
+                returnPiecesToBoard(ownType, 1);
+                retainTurn = false;
+            }
+
+            userPottedCount = pieces.filter(p => p.type === 'white' && p.isPotted).length;
+            aiPottedCount = pieces.filter(p => p.type === 'black' && p.isPotted).length;
+
+            if (userPottedCount >= 9 && (queenState === 'covered' || pieces.find(p => p.type==='queen').isPotted)) {
+                showBanner("🏆 සුභ පැතුම්! ඔබ ජයග්‍රහණය කළා!", 10000);
+                updateUI();
+                return;
+            } else if (aiPottedCount >= 9 && (queenState === 'covered' || pieces.find(p => p.type==='queen').isPotted)) {
+                showBanner("🤖 Notiya ජයග්‍රහණය කළා! නැවත උත්සාහ කරන්න.", 10000);
+                updateUI();
+                return;
+            }
+
+            if (!retainTurn) {
+                currentTurn = (currentTurn === 'user') ? 'ai' : 'user';
+            }
+
+            pottedInCurrentShot = [];
+            resetStriker();
+            updateUI();
+
+            if (currentTurn === 'ai') {
+                triggerAITurn();
+            }
+        }
+
+        function resetStriker() {
+            striker.isPotted = false;
+            striker.vx = 0;
+            striker.vy = 0;
+
+            if (currentTurn === 'user') {
+                striker.y = USER_BASELINE_Y;
+                striker.x = parseFloat(strikerPosSlider.value);
+            } else {
+                striker.y = AI_BASELINE_Y;
+                striker.x = Math.random() * 280 + 150; 
+            }
+        }
+
+        // Corrected AI Logic (Always Shoots Downwards into the Play Area)
+        function triggerAITurn() {
+            if (aiThinking || isMoving) return;
+            aiThinking = true;
+
+            setTimeout(() => {
+                let validTargets = pieces.filter(p => !p.isPotted && (p.type === 'black' || (p.type === 'queen' && queenState === 'board')));
+                if (validTargets.length === 0) {
+                    validTargets = pieces.filter(p => !p.isPotted && p.type !== 'striker');
+                }
+
+                if (validTargets.length === 0) {
+                    aiThinking = false;
+                    return;
+                }
+
+                let bestShot = null;
+                let bestScore = -Infinity;
+
+                validTargets.forEach(target => {
+                    POCKETS.forEach(pkt => {
+                        let pktDx = pkt.x - target.x;
+                        let pktDy = pkt.y - target.y;
+                        let distToPocket = Math.hypot(pktDx, pktDy);
+                        if (distToPocket === 0) return;
+
+                        let pktUx = pktDx / distToPocket;
+                        let pktUy = pktDy / distToPocket;
+
+                        // Ghost point where striker should hit target
+                        let ghostX = target.x - pktUx * (target.radius + striker.radius);
+                        let ghostY = target.y - pktUy * (target.radius + striker.radius);
+
+                        // AI Striker is at top (Y=138). Ghost MUST be BELOW baseline (Y > 160) for a direct shot downwards!
+                        if (ghostY < 160) return;
+
+                        let idealStrikerX = Math.max(140, Math.min(440, ghostX));
+                        let shotDirX = ghostX - idealStrikerX;
+                        let shotDirY = ghostY - AI_BASELINE_Y;
+                        let shotDist = Math.hypot(shotDirX, shotDirY);
+
+                        if (shotDirY <= 10) return; // Must shoot downwards!
+
+                        let align = (shotDirX * pktUx + shotDirY * pktUy) / (shotDist || 1);
+                        let score = (1000 - distToPocket) + (align * 400) - (shotDist * 0.5);
+
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestShot = {
+                                strikerX: idealStrikerX,
+                                dirX: shotDirX,
+                                dirY: shotDirY,
+                                power: Math.min(Math.max(shotDist * 0.12, 11), 21)
+                            };
+                        }
+                    });
+                });
+
+                // Fallback if no clean direct shot downwards
+                if (!bestShot) {
+                    let closestPiece = null;
+                    let minDist = Infinity;
+                    validTargets.forEach(t => {
+                        if (t.y > 160) {
+                            let d = Math.hypot(t.x - 290, t.y - AI_BASELINE_Y);
+                            if (d < minDist) { minDist = d; closestPiece = t; }
+                        }
+                    });
+
+                    let targetX = closestPiece ? closestPiece.x : 290;
+                    let targetY = closestPiece ? closestPiece.y : 290;
+                    let idealStrikerX = Math.max(140, Math.min(440, targetX));
+
+                    bestShot = {
+                        strikerX: idealStrikerX,
+                        dirX: targetX - idealStrikerX,
+                        dirY: Math.max(50, targetY - AI_BASELINE_Y),
+                        power: 14
+                    };
+                }
+
+                striker.y = AI_BASELINE_Y;
+                striker.x = bestShot.strikerX;
+
+                let len = Math.hypot(bestShot.dirX, bestShot.dirY);
+                let ux = bestShot.dirX / (len || 1);
+                let uy = bestShot.dirY / (len || 1);
+
+                // Guarantee shot is directed DOWNWARDS into board
+                if (uy < 0.2) uy = 0.5;
+
+                // Visual cue aiming for AI (showing stick pulled back up)
+                touchX = striker.x - (ux * 60);
+                touchY = striker.y - (uy * 60);
+
+                setTimeout(() => {
+                    striker.vx = ux * bestShot.power;
+                    striker.vy = uy * bestShot.power;
+
+                    aiThinking = false;
+                    isMoving = true;
+                }, 800);
+
+            }, 600);
+        }
+
+        function render() {
+            drawBoard();
+            drawAimControls();
+            pieces.forEach(p => p.draw());
+
+            if (isMoving) {
+                updatePhysics();
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        function getCanvasCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (clientX - rect.left) * (BOARD_SIZE / rect.width),
+                y: (clientY - rect.top) * (BOARD_SIZE / rect.height)
+            };
+        }
+
+        function handleStart(e) {
+            if (isMoving || currentTurn !== 'user' || aiThinking) return;
+            const coords = getCanvasCoords(e);
+
+            if (Math.abs(coords.y - USER_BASELINE_Y) < 25 && coords.x >= 120 && coords.x <= 460) {
+                isPlacing = true;
+                striker.x = Math.max(140, Math.min(440, coords.x));
+                strikerPosSlider.value = striker.x;
+            } else {
+                isAiming = true;
+                touchX = coords.x;
+                touchY = coords.y;
+            }
+        }
+
+        function handleMove(e) {
+            if (currentTurn !== 'user') return;
+            const coords = getCanvasCoords(e);
+
+            if (isPlacing) {
+                striker.x = Math.max(140, Math.min(440, coords.x));
+                strikerPosSlider.value = striker.x;
+            } else if (isAiming) {
+                touchX = coords.x;
+                touchY = coords.y;
+            }
+        }
+
+        function handleEnd() {
+            if (isPlacing) {
+                isPlacing = false;
+            }
+            if (isAiming && currentTurn === 'user') {
+                isAiming = false;
+                let vec = getAimVector();
+
+                if (vec.dist > 10) {
+                    const power = Math.min(vec.dist, 120) * 0.18;
+                    const ux = vec.dirX / vec.dist;
+                    const uy = vec.dirY / vec.dist;
+                    striker.vx = ux * power;
+                    striker.vy = uy * power;
+                    isMoving = true;
+                }
+            }
+        }
+
+        canvas.addEventListener('touchstart', (e) => { handleStart(e); e.preventDefault(); }, { passive: false });
+        canvas.addEventListener('touchmove', (e) => { handleMove(e); e.preventDefault(); }, { passive: false });
+        canvas.addEventListener('touchend', handleEnd);
+
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleEnd);
+
+        strikerPosSlider.addEventListener('input', (e) => {
+            if (!isMoving && !isAiming && currentTurn === 'user') {
+                striker.x = parseFloat(e.target.value);
+            }
+        });
+
+        resetBtn.addEventListener('click', initGame);
+
+        initGame();
+        render();
+    </script>
+</body>
+</html>
